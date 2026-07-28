@@ -1,0 +1,423 @@
+/*
+ * publico/css/auth.css
+ * ═══════════════════════════════════════════════════════════════════
+ * Pantallas de AUTENTICACIÓN: login, registro, recuperar contraseña.
+ *
+ * Es un archivo aparte (no va en estilos.css) porque estas pantallas
+ * NO usan el layout de la app —no tienen sidebar ni topbar—: son
+ * páginas de ancho completo con su propia composición. Meterlas en
+ * estilos.css mezclaría reglas de dos layouts distintos.
+ *
+ * Reutiliza los tokens de estilos.css (--azul, --radio, --sombra…),
+ * así que comparte identidad visual con la landing y con la app.
+ * ═══════════════════════════════════════════════════════════════════
+ */
+
+/* ── Estructura: panel de marca + formulario ──────────────────
+   Dos columnas en escritorio. La izquierda transmite confianza
+   (institucional); la derecha concentra la tarea. En móvil el panel
+   de marca se oculta: en una pantalla chica lo único que importa es
+   entrar, no la decoración. */
+.auth {
+    min-height: 100vh;
+    display: grid;
+    grid-template-columns: 1.05fr 1fr;
+    background: var(--blanco);
+}
+
+/* ── Columna de marca ────────────────────────────────────────── */
+.auth-marca {
+    position: relative; overflow: hidden;
+    padding: 52px 56px;
+    display: flex; flex-direction: column;
+    background: linear-gradient(150deg, var(--azul-osc) 0%, var(--azul) 55%, #0ea5e9 100%);
+    color: #fff;
+}
+/* Círculos suaves de fondo: dan profundidad sin cargar la pantalla */
+.auth-marca::before, .auth-marca::after {
+    content: ""; position: absolute; border-radius: 50%;
+    background: radial-gradient(circle, rgba(255,255,255,.13) 0%, transparent 70%);
+    pointer-events: none;
+}
+.auth-marca::before { width: 520px; height: 520px; top: -180px; right: -160px; }
+.auth-marca::after  { width: 380px; height: 380px; bottom: -140px; left: -120px; }
+
+.auth-logo {
+    display: inline-flex; align-items: center; gap: 12px;
+    font-size: 1.25rem; font-weight: 800; color: #fff;
+    position: relative; z-index: 1;
+}
+.auth-logo:hover { text-decoration: none; }
+.auth-logo .marca {
+    width: 42px; height: 42px; border-radius: 12px;
+    background: rgba(255,255,255,.18);
+    backdrop-filter: blur(6px);
+    display: grid; place-items: center;
+    border: 1px solid rgba(255,255,255,.25);
+}
+
+.auth-marca-cuerpo { margin-top: auto; margin-bottom: auto; position: relative; z-index: 1; padding: 40px 0; }
+.auth-marca h1 {
+    font-size: clamp(1.8rem, 3vw, 2.5rem); font-weight: 800;
+    line-height: 1.15; letter-spacing: -1px; margin-bottom: 16px;
+}
+.auth-marca p { font-size: 1.02rem; opacity: .9; max-width: 420px; line-height: 1.6; }
+
+/* Lista de garantías: es lo que construye la confianza */
+.auth-puntos { list-style: none; margin-top: 34px; display: flex; flex-direction: column; gap: 17px; }
+.auth-puntos li { display: flex; align-items: flex-start; gap: 13px; font-size: .93rem; }
+.auth-puntos .tic {
+    width: 26px; height: 26px; border-radius: 50%; flex-shrink: 0;
+    background: rgba(255,255,255,.2); display: grid; place-items: center;
+    border: 1px solid rgba(255,255,255,.28);
+}
+.auth-puntos strong { display: block; font-weight: 700; margin-bottom: 2px; }
+.auth-puntos span   { opacity: .82; line-height: 1.45; }
+
+.auth-marca-pie { position: relative; z-index: 1; font-size: .8rem; opacity: .7; }
+
+/* ── Columna del formulario ──────────────────────────────────── */
+.auth-panel {
+    display: flex; align-items: center; justify-content: center;
+    padding: 44px 32px; background: var(--gris-claro);
+}
+.auth-card {
+    width: 100%; max-width: 440px;
+    background: var(--blanco); border-radius: 20px;
+    box-shadow: var(--sombra-lg);
+    padding: 40px 38px;
+    animation: auth-entra .45s cubic-bezier(.16,1,.3,1);
+}
+@keyframes auth-entra {
+    from { opacity: 0; transform: translateY(16px); }
+    to   { opacity: 1; transform: none; }
+}
+.auth-card--ancha { max-width: 620px; }
+
+.auth-card-head { margin-bottom: 28px; }
+.auth-card-head h2 { font-size: 1.5rem; font-weight: 800; color: var(--gris-osc); letter-spacing: -.6px; }
+.auth-card-head p  { color: var(--gris); font-size: .92rem; margin-top: 6px; }
+
+/* Logo visible sólo en móvil (cuando se oculta la columna de marca) */
+.auth-logo-movil { display: none; justify-content: center; margin-bottom: 26px; }
+
+/* ── Campos ──────────────────────────────────────────────────── */
+.campo { margin-bottom: 18px; }
+.campo > label {
+    display: block; font-size: .82rem; font-weight: 600;
+    color: var(--gris-med); margin-bottom: 7px;
+}
+.campo .req { color: var(--rojo); }
+
+/* Envoltorio para poder poner íconos y el botón de ver contraseña
+   DENTRO del input sin romper su caja. */
+.campo-input { position: relative; display: flex; align-items: center; }
+.campo-input .ico-izq {
+    position: absolute; left: 14px; color: var(--gris2);
+    pointer-events: none; display: grid; place-items: center;
+    transition: color .18s;
+}
+.campo-input input {
+    width: 100%;
+    padding: 13px 14px 13px 44px;
+    border: 1.5px solid var(--borde); border-radius: var(--radio-sm);
+    font-family: inherit; font-size: .93rem; color: var(--gris-osc);
+    background: var(--blanco); outline: none;
+    transition: border-color .18s, box-shadow .18s;
+}
+.campo-input input::placeholder { color: var(--gris2); }
+.campo-input input:focus { border-color: var(--azul); box-shadow: 0 0 0 3px rgba(37,99,235,.14); }
+.campo-input input:focus ~ .ico-izq,
+.campo-input:focus-within .ico-izq { color: var(--azul); }
+/* Con botón de ver/ocultar hay que dejarle lugar a la derecha */
+.campo-input.con-boton input { padding-right: 48px; }
+
+.btn-ojo {
+    position: absolute; right: 6px;
+    width: 36px; height: 36px; border-radius: 8px;
+    display: grid; place-items: center;
+    background: none; border: none; cursor: pointer; color: var(--gris);
+    transition: color .15s, background .15s;
+}
+.btn-ojo:hover { color: var(--azul); background: var(--azul-claro); }
+
+/* Estados de validación: el color NUNCA es la única señal (WCAG 1.4.1),
+   siempre va acompañado de un texto explicativo debajo. */
+.campo.invalido .campo-input input { border-color: var(--rojo); }
+.campo.invalido .campo-input input:focus { box-shadow: 0 0 0 3px rgba(220,38,38,.14); }
+.campo.valido   .campo-input input { border-color: var(--verde); }
+
+.campo-error {
+    display: none; align-items: center; gap: 6px;
+    font-size: .78rem; color: var(--rojo); margin-top: 6px;
+}
+.campo.invalido .campo-error { display: flex; }
+.campo-ayuda { font-size: .76rem; color: var(--gris); margin-top: 6px; }
+
+/* ── Aviso de Bloq Mayús ─────────────────────────────────────── */
+.caps {
+    display: none; align-items: center; gap: 7px;
+    margin-top: 8px; padding: 8px 12px;
+    background: var(--amarillo-claro); color: #92400e;
+    border-radius: 8px; font-size: .78rem; font-weight: 600;
+    animation: auth-entra .2s ease;
+}
+.caps.visible { display: flex; }
+
+/* ── Fila recordarme / olvidé ────────────────────────────────── */
+.auth-fila {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 14px; flex-wrap: wrap; margin-bottom: 24px;
+}
+.check {
+    display: inline-flex; align-items: center; gap: 9px;
+    font-size: .85rem; color: var(--gris-med); cursor: pointer; user-select: none;
+}
+.check input { width: 17px; height: 17px; accent-color: var(--azul); cursor: pointer; margin: 0; }
+.enlace-sutil { font-size: .85rem; color: var(--azul); font-weight: 600; }
+
+/* ── Botón principal con estado de carga ─────────────────────── */
+.btn-auth {
+    width: 100%; padding: 14px; border: none; border-radius: var(--radio-sm);
+    background: var(--azul); color: #fff;
+    font-family: inherit; font-size: .95rem; font-weight: 700;
+    cursor: pointer; position: relative;
+    display: inline-flex; align-items: center; justify-content: center; gap: 9px;
+    box-shadow: var(--azul-glow);
+    transition: background .15s, transform .15s, box-shadow .15s;
+}
+.btn-auth:hover:not(:disabled) { background: var(--azul-osc); transform: translateY(-1px); }
+.btn-auth:active:not(:disabled) { transform: translateY(0); }
+.btn-auth:disabled { opacity: .75; cursor: progress; }
+
+/* El spinner sólo aparece mientras se envía: da feedback inmediato y,
+   junto con el disabled, evita el doble envío del formulario. */
+.btn-auth .spinner {
+    display: none;
+    width: 17px; height: 17px; border-radius: 50%;
+    border: 2.5px solid rgba(255,255,255,.35); border-top-color: #fff;
+    animation: girar .7s linear infinite;
+}
+.btn-auth.cargando .spinner { display: block; }
+.btn-auth.cargando .btn-texto { opacity: .9; }
+@keyframes girar { to { transform: rotate(360deg); } }
+
+/* ── Alertas ─────────────────────────────────────────────────── */
+.auth-alerta {
+    display: flex; align-items: flex-start; gap: 11px;
+    padding: 13px 15px; border-radius: var(--radio-sm);
+    font-size: .86rem; margin-bottom: 20px; line-height: 1.5;
+    animation: auth-entra .3s ease;
+}
+.auth-alerta svg { flex-shrink: 0; margin-top: 1px; }
+.auth-alerta--error { background: var(--rojo-claro);  color: #991b1b; border-left: 3px solid var(--rojo); }
+.auth-alerta--exito { background: var(--verde-claro); color: #14532d; border-left: 3px solid var(--verde); }
+.auth-alerta--info  { background: var(--azul-claro);  color: var(--azul-osc); border-left: 3px solid var(--azul); }
+.auth-alerta--aviso { background: var(--amarillo-claro); color: #92400e; border-left: 3px solid var(--amarillo); }
+
+/* ── Pie de la tarjeta ───────────────────────────────────────── */
+.auth-pie { text-align: center; margin-top: 26px; font-size: .88rem; color: var(--gris); }
+.auth-pie a { color: var(--azul); font-weight: 600; }
+
+.auth-separador {
+    display: flex; align-items: center; gap: 14px;
+    margin: 24px 0; color: var(--gris2); font-size: .78rem;
+}
+.auth-separador::before, .auth-separador::after {
+    content: ""; flex: 1; height: 1px; background: var(--borde);
+}
+
+/* ══════════════════════════════════════════════════════════════
+   REGISTRO — asistente por pasos
+   ══════════════════════════════════════════════════════════════ */
+
+/* Mejora progresiva: sin JS los 3 pasos quedan visibles y el
+   formulario se puede completar igual. La clase .js-wizard la
+   agrega el script, y recién ahí se activa el modo asistente. */
+.paso { display: block; }
+.js-wizard .paso[hidden] { display: none; }
+.paso + .paso { margin-top: 30px; }
+.js-wizard .paso + .paso { margin-top: 0; }
+
+/* Barra de progreso */
+.pasos-barra {
+    display: flex; align-items: center; gap: 6px;
+    list-style: none; margin-bottom: 26px;
+}
+.paso-item {
+    flex: 1; display: flex; align-items: center; gap: 9px;
+    font-size: .78rem; font-weight: 600; color: var(--gris2);
+    padding-bottom: 11px; border-bottom: 2.5px solid var(--borde);
+    transition: color .2s, border-color .2s;
+}
+.paso-num {
+    width: 25px; height: 25px; border-radius: 50%; flex-shrink: 0;
+    display: grid; place-items: center;
+    background: var(--borde); color: var(--gris);
+    font-size: .75rem; font-weight: 700;
+    transition: background .2s, color .2s;
+}
+.paso-item.activo { color: var(--azul); border-bottom-color: var(--azul); }
+.paso-item.activo .paso-num { background: var(--azul); color: #fff; }
+.paso-item.hecho { color: var(--verde); border-bottom-color: var(--verde); cursor: pointer; }
+.paso-item.hecho .paso-num { background: var(--verde); color: #fff; }
+/* El número se reemplaza por un tilde cuando el paso está completo */
+.paso-item.hecho .paso-num { font-size: 0; }
+.paso-item.hecho .paso-num::after { content: "✓"; font-size: 13px; }
+
+.paso-acciones {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 12px; margin-top: 26px; padding-top: 20px;
+    border-top: 1px solid var(--borde);
+}
+.btn-paso-atras {
+    background: none; border: none; cursor: pointer;
+    color: var(--gris); font-family: inherit; font-size: .88rem; font-weight: 600;
+    padding: 12px 4px; transition: color .15s;
+}
+.btn-paso-atras:hover { color: var(--azul); }
+
+/* Grilla de dos columnas para los datos personales */
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0 16px; }
+.grid-2 .col-2 { grid-column: 1 / -1; }
+
+.campo-opcional { font-weight: 500; color: var(--gris2); font-size: .78rem; }
+
+/* Los <select> comparten el estilo de los inputs para que el
+   formulario se vea uniforme (por defecto el navegador los pinta
+   distinto y rompen la línea visual). */
+.select-limpio {
+    width: 100%; padding: 13px 14px 13px 44px;
+    border: 1.5px solid var(--borde); border-radius: var(--radio-sm);
+    font-family: inherit; font-size: .93rem; color: var(--gris-osc);
+    background: var(--blanco); outline: none; cursor: pointer;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' fill='none' stroke='%2364748b' stroke-width='2.2' stroke-linecap='round'%3E%3Cpath d='m3 5 4 4 4-4'/%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: right 14px center;
+    transition: border-color .18s, box-shadow .18s;
+}
+.select-limpio:focus { border-color: var(--azul); box-shadow: 0 0 0 3px rgba(37,99,235,.14); }
+
+/* ── Zona de foto (arrastrar y soltar) ───────────────────────── */
+.zona-foto {
+    display: flex; align-items: center; gap: 16px;
+    padding: 18px; border: 2px dashed var(--borde); border-radius: var(--radio);
+    background: var(--gris-claro); cursor: pointer;
+    transition: border-color .18s, background .18s, transform .12s;
+}
+.zona-foto:hover, .zona-foto:focus-visible { border-color: var(--azul); background: var(--azul-claro); }
+/* Estado mientras se arrastra un archivo encima */
+.zona-foto.arrastrando {
+    border-color: var(--azul); background: var(--azul-soft2);
+    transform: scale(1.01);
+}
+.zona-foto.con-foto { border-style: solid; border-color: var(--verde); background: var(--verde-claro); }
+
+.foto-previa {
+    width: 74px; height: 74px; border-radius: 50%; flex-shrink: 0;
+    display: grid; place-items: center; overflow: hidden;
+    background: var(--blanco); border: 2px solid var(--borde); color: var(--gris2);
+}
+.foto-previa img { width: 100%; height: 100%; object-fit: cover; }
+.zona-foto-texto { display: flex; flex-direction: column; gap: 3px; }
+.zona-foto-texto strong { font-size: .9rem; color: var(--gris-osc); }
+.zona-foto-texto span   { font-size: .78rem; color: var(--gris); }
+
+.foto-acciones {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 10px; margin-top: 10px; font-size: .8rem; color: var(--gris);
+}
+.foto-nombre { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.btn-quitar-foto {
+    background: none; border: none; cursor: pointer; flex-shrink: 0;
+    color: var(--rojo); font-family: inherit; font-size: .8rem; font-weight: 600;
+}
+.btn-quitar-foto:hover { text-decoration: underline; }
+
+/* ── Selector de obra social ─────────────────────────────────── */
+.lista-os {
+    list-style: none; margin-top: 6px;
+    max-height: 250px; overflow-y: auto;
+    border: 1.5px solid var(--borde); border-radius: var(--radio-sm);
+    background: var(--blanco); box-shadow: var(--sombra-md);
+}
+.os-opcion {
+    padding: 11px 15px; cursor: pointer;
+    display: flex; flex-direction: column; gap: 2px;
+    border-bottom: 1px solid var(--borde);
+    transition: background .12s;
+}
+.os-opcion:last-of-type { border-bottom: none; }
+.os-opcion:hover, .os-opcion:focus { background: var(--azul-claro); outline: none; }
+.os-opcion strong { font-size: .87rem; color: var(--gris-osc); }
+.os-opcion span   { font-size: .76rem; color: var(--gris); }
+.os-vacio { padding: 16px; text-align: center; color: var(--gris); font-size: .84rem; font-style: italic; }
+
+/* ── Medidor de fortaleza de contraseña ──────────────────────
+   Guía visual para el usuario. La validación REAL es del servidor. */
+.fuerza { display: flex; align-items: center; gap: 11px; margin-top: 10px; }
+.fuerza-barra {
+    flex: 1; height: 6px; border-radius: 99px;
+    background: var(--borde); overflow: hidden;
+}
+.fuerza-barra span {
+    display: block; height: 100%; width: 0;
+    border-radius: 99px; transition: width .3s ease, background .3s ease;
+}
+.fuerza-barra span.debil  { background: var(--rojo); }
+.fuerza-barra span.media  { background: var(--amarillo); }
+.fuerza-barra span.fuerte { background: var(--verde); }
+.fuerza-texto { font-size: .75rem; font-weight: 700; color: var(--gris); min-width: 66px; }
+
+/* ── Lista de requisitos ─────────────────────────────────────
+   Se muestran SIEMPRE (no sólo al fallar): así el usuario sabe qué se
+   espera antes de escribir, en vez de descubrirlo por ensayo y error. */
+.requisitos { list-style: none; margin-top: 12px; display: flex; flex-direction: column; gap: 6px; }
+.requisitos li {
+    display: flex; align-items: center; gap: 8px;
+    font-size: .78rem; color: var(--gris);
+    transition: color .18s;
+}
+.requisitos li .marca { font-size: .7rem; line-height: 1; transition: color .18s; }
+.requisitos li.ok { color: var(--verde); }
+.requisitos li.ok .marca { color: var(--verde); }
+
+/* Sólo para lectores de pantalla (un placeholder NO es una etiqueta) */
+.solo-lectores {
+    position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+    overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
+
+/* ── Responsive ──────────────────────────────────────────────── */
+@media (max-width: 900px) {
+    .auth { grid-template-columns: 1fr; }
+    .auth-marca { display: none; }          /* en móvil, foco total en la tarea */
+    .auth-logo-movil { display: flex; }
+    .auth-panel { padding: 32px 20px; min-height: 100vh; }
+}
+@media (max-width: 480px) {
+    .auth-card { padding: 30px 22px; border-radius: 16px; }
+    .auth-card-head h2 { font-size: 1.32rem; }
+    .auth-fila { flex-direction: column; align-items: flex-start; gap: 12px; }
+
+    /* El formulario de registro pasa a una sola columna */
+    .grid-2 { grid-template-columns: 1fr; }
+
+    /* En la barra de pasos se ocultan los rótulos: quedan sólo los
+       números, que es lo que entra sin apretujarse. */
+    .paso-nombre { display: none; }
+    .paso-item { justify-content: center; }
+
+    /* La zona de foto se apila para no quedar apretada */
+    .zona-foto { flex-direction: column; text-align: center; }
+
+    .paso-acciones { flex-direction: column-reverse; gap: 10px; }
+    .paso-acciones .btn-auth,
+    .paso-acciones .btn-paso-atras { width: 100%; }
+}
+
+/* Respeta la preferencia de reducir movimiento del sistema */
+@media (prefers-reduced-motion: reduce) {
+    .auth-card, .auth-alerta, .caps { animation: none; }
+    .btn-auth .spinner { animation-duration: 1.6s; }
+}
