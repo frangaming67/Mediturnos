@@ -1,0 +1,33 @@
+# =============================================================
+# MediTurnos — normalización de fin de línea
+# =============================================================
+# El proyecto se desarrolla en Windows (XAMPP) pero puede clonarse
+# en Linux o macOS. Sin esta configuración, Git guardaría los saltos
+# de línea de Windows (CRLF) dentro del repositorio y cualquier
+# cambio mínimo aparecería como "archivo entero modificado" al
+# trabajar desde otro sistema.
+#
+# Con `text=auto`, Git guarda SIEMPRE con LF en el repositorio y
+# convierte al formato local en cada checkout.
+* text=auto
+
+# Archivos de código: LF explícito
+*.php  text eol=lf
+*.css  text eol=lf
+*.js   text eol=lf
+*.sql  text eol=lf
+*.md   text eol=lf
+*.json text eol=lf
+*.txt  text eol=lf
+
+# Los .bat de Windows necesitan CRLF sí o sí
+*.bat  text eol=crlf
+
+# Binarios: Git no debe tocarlos
+*.png  binary
+*.jpg  binary
+*.jpeg binary
+*.gif  binary
+*.webp binary
+*.ico  binary
+*.pdf  binary
