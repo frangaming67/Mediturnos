@@ -1,0 +1,45 @@
+# =============================================================
+# MediTurnos — archivos que NO deben versionarse
+# =============================================================
+
+# ── Credenciales ─────────────────────────────────────────────
+# config/mail.php lleva la contraseña del servidor de correo.
+# NUNCA debe subirse a un repositorio: quien clone el proyecto
+# tendría acceso a la casilla. Se versiona sólo la plantilla
+# (config/mail.ejemplo.php), sin datos reales.
+config/mail.php
+
+# ── Correos generados en modo desarrollo ─────────────────────
+# Son mails de prueba con enlaces de recuperación válidos.
+almacenamiento/mails/*.html
+
+# ── Imágenes subidas por los usuarios ────────────────────────
+# Contenido de cada instalación, no del código. Además pueden
+# incluir datos personales (fotos de perfil).
+publico/img/perfiles/*
+!publico/img/perfiles/.gitkeep
+
+# ── Herramientas de desarrollo local ─────────────────────────
+# Configuración del asistente de código: es del entorno de cada
+# desarrollador, no del proyecto.
+.claude/
+
+# ── Utilidad de instalación ──────────────────────────────────
+# probar_mail.php sirve para configurar el correo la primera vez.
+# Permite enviar mails desde la casilla del sistema sin autenticarse,
+# así que no debe llegar a producción ni al repositorio.
+probar_mail.php
+
+# ── Sistema operativo / editores ─────────────────────────────
+Thumbs.db
+desktop.ini
+.DS_Store
+.vscode/
+.idea/
+*.swp
+
+# ── Logs y temporales ────────────────────────────────────────
+*.log
+*.bak
+*.tmp
+*.backup_*
