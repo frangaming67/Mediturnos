@@ -188,17 +188,33 @@ paciente ──< turno >── medico
 
 ## Usuarios de prueba
 
-Todos con la contraseña **`password123`** (definida en `seed_datos.sql`).
+Los que crea `seed_datos.sql` en una instalación limpia, todos con la contraseña
+**`password123`**:
 
 | Usuario | Rol | Qué puede hacer |
 |---|---|---|
 | `admin` | Administrador | Todo, incluida la gestión de usuarios |
 | `recepcion` | Recepcionista | Turnos, pacientes, cobros |
 | `cfernandez` | Médico | Su agenda y sus pacientes |
+| `mgonzalez` | Médico | Su agenda y sus pacientes |
 | `jperez` | Paciente | Reservar y gestionar sus turnos |
+| `agarcia` | Paciente | Reservar y gestionar sus turnos |
 
 > Se puede entrar con el **nombre de usuario o con el correo**, indistintamente.
+
+> ⚠️ **En una instalación que ya viene usándose, estos datos no aplican.** Las
+> contraseñas pueden haberse cambiado y algunas cuentas pueden no existir. Para ver
+> las cuentas reales de tu base:
 >
+> ```sql
+> SELECT u.usuario, u.email, r.nombre AS rol, u.estado
+> FROM usuario u JOIN rol r ON r.id_rol = u.id_rol
+> WHERE u.estado = 'activo';
+> ```
+>
+> Si olvidaste una contraseña, usá el flujo de recuperación desde `recuperar.php`
+> en lugar de escribir el hash a mano.
+
 > ⚠️ Son credenciales de desarrollo. Cambiarlas antes de cualquier uso real.
 
 ---
