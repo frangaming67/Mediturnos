@@ -1,0 +1,224 @@
+/*
+ * publico/css/dashboard.css
+ * ═══════════════════════════════════════════════════════════════════
+ * Estilos EXCLUSIVOS de la vista Dashboard en modo PACIENTE.
+ *
+ * Contiene el layout de dos columnas (lista de médicos + calendario
+ * mensual), la interacción de selección de días disponibles y la
+ * presentación de los slots de horario.
+ *
+ * Este archivo NO afecta a ninguna otra página del sistema.
+ * Cargado globalmente desde navbar.php junto con estilos.css.
+ * ═══════════════════════════════════════════════════════════════════
+ */
+
+
+/* ──────────────────────────────────────────────────────────────────
+   LAYOUT PRINCIPAL
+   Grilla de dos columnas: lista de médicos (fija) | calendario.
+   En móvil se apila verticalmente.
+   ────────────────────────────────────────────────────────────────── */
+.cal-wrap {
+    display: grid;
+    grid-template-columns: 280px 1fr;
+    gap: 20px;
+}
+
+
+/* ──────────────────────────────────────────────────────────────────
+   TARJETAS DE MÉDICO (columna izquierda)
+   Cada fila muestra avatar con iniciales, nombre y especialidades.
+   Al hacer click se activa la clase .seleccionado y se carga el
+   calendario con los días en que ese médico atiende.
+   ────────────────────────────────────────────────────────────────── */
+.medico-card {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    cursor: pointer;
+    border-bottom: 1px solid var(--borde);
+    transition: background .15s;
+}
+.medico-card:last-child   { border-bottom: none; }
+.medico-card:hover        { background: var(--azul-claro); }
+/* Estado activo: médico seleccionado por el usuario */
+.medico-card.seleccionado { background: var(--azul-claro); border-left: 3px solid var(--azul); }
+
+/* Círculo con iniciales del médico */
+.medico-card .avatar {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    background: var(--azul);
+    color: #fff;
+    font-weight: 700;
+    font-size: .9rem;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.medico-nombre { font-size: .87rem; font-weight: 600; color: var(--gris-osc); }
+.medico-esp    { font-size: .75rem; color: var(--gris); margin-top: 2px; }
+
+
+/* ──────────────────────────────────────────────────────────────────
+   CABECERA DEL CALENDARIO
+   Fila con botones ‹ / › para navegar meses y el título "Mes Año".
+   ────────────────────────────────────────────────────────────────── */
+.cal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--borde);
+}
+
+/* Texto "Junio 2025" generado por JavaScript */
+.cal-titulo-mes {
+    font-weight: 600;
+    font-size: .95rem;
+    color: var(--gris-osc);
+}
+
+/* Botones de navegación de mes (‹ y ›) */
+.cal-nav {
+    background: none;
+    border: 1px solid var(--borde);
+    border-radius: 6px;
+    width: 32px;
+    height: 32px;
+    cursor: pointer;
+    font-size: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background .15s;
+}
+.cal-nav:hover { background: var(--gris-claro); }
+
+
+/* ──────────────────────────────────────────────────────────────────
+   GRILLA DEL CALENDARIO
+   7 columnas (una por día de la semana), encabezados Dom-Sáb
+   y celdas de días generadas dinámicamente con JavaScript.
+   ────────────────────────────────────────────────────────────────── */
+.cal-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    padding: 12px 16px;
+    gap: 4px;
+}
+
+/* Etiquetas Dom, Lun, Mar … en la primera fila */
+.cal-dia-nombre {
+    text-align: center;
+    font-size: .72rem;
+    font-weight: 600;
+    color: var(--gris);
+    text-transform: uppercase;
+    padding: 4px 0;
+}
+
+/* Celda base de cada día */
+.cal-dia {
+    aspect-ratio: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    font-size: .85rem;
+    cursor: default;
+    transition: background .15s, color .15s;
+}
+
+/* Días del mes anterior o siguiente (relleno de la grilla) */
+.cal-dia.otro-mes { color: var(--borde); }
+
+/* Día con turnos libres para el médico seleccionado */
+.cal-dia.disponible {
+    background: var(--azul-claro);
+    color: var(--azul-osc);
+    font-weight: 600;
+    cursor: pointer;
+}
+.cal-dia.disponible:hover { background: var(--azul); color: #fff; }
+
+/* Día elegido por el usuario */
+.cal-dia.seleccionado {
+    background: var(--azul) !important;
+    color: #fff !important;
+    border-radius: 80%;
+}
+
+/* El día de hoy siempre lleva borde, sin importar disponibilidad */
+.cal-dia.hoy { border: 2px solid var(--azul); border-radius: 90%; }
+
+/* Día en que el médico está AUSENTE: no se puede reservar (tachado) */
+.cal-dia.ausente {
+    color: var(--rojo, #c0392b);
+    text-decoration: line-through;
+    opacity: .55;
+    cursor: not-allowed;
+}
+
+
+/* ──────────────────────────────────────────────────────────────────
+   SLOTS DE HORARIO (sección debajo del calendario)
+   Aparece al elegir un día disponible; muestra botones por cada
+   horario libre del médico en esa fecha.
+   ────────────────────────────────────────────────────────────────── */
+.slots-wrap {
+    padding: 16px 20px;
+    border-top: 1px solid var(--borde);
+}
+.slots-titulo {
+    font-size: .88rem;
+    font-weight: 600;
+    color: var(--gris-osc);
+    margin-bottom: 12px;
+}
+
+/*
+ * Sobreescribe el .slots-grid de estilos.css (grilla de nuevo turno)
+ * para que dentro del calendario use flex en lugar de grid.
+ * Esto permite que los botones se adapten mejor al espacio disponible.
+ */
+.cal-wrap .slots-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+/* Botón individual de horario (ej: "10:30") */
+.slot-btn {
+    padding: 8px 14px;
+    border: 1px solid var(--azul);
+    border-radius: 6px;
+    background: #fff;
+    color: var(--azul);
+    font-size: .83rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background .15s, color .15s;
+}
+.slot-btn:hover { background: var(--azul); color: #fff; }
+
+/* Placeholder cuando no hay médico seleccionado todavía */
+.sin-medico {
+    text-align: center;
+    padding: 48px 20px;
+    color: var(--gris);
+    font-style: italic;
+    font-size: .9rem;
+}
+
+
+/* ──────────────────────────────────────────────────────────────────
+   RESPONSIVE
+   En pantallas angostas las dos columnas se apilan.
+   ────────────────────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+    .cal-wrap { grid-template-columns: 1fr; }
+}

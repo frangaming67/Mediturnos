@@ -1,0 +1,193 @@
+/*
+ * publico/css/utilidades.css
+ * ═══════════════════════════════════════════════════════════════════
+ * Clases utilitarias de propósito general.
+ *
+ * Objetivo: eliminar completamente los estilos en línea (style="…")
+ * de las vistas PHP, centralizando aquí cada valor recurrente.
+ *
+ * Organización:
+ *   1. Ancho máximo de paneles formulario
+ *   2. Espaciado (margin-bottom / margin-top)
+ *   3. Grilla — control de columnas
+ *   4. Layout flex
+ *   5. Panel header con separador
+ *   6. Overflow
+ *   7. Formulario — alineación de grupo de botones
+ *   8. Tipografía auxiliar
+ *   9. Componentes compuestos (resumen de turno)
+ *  10. Página de error 403 (standalone, sin navbar)
+ * ═══════════════════════════════════════════════════════════════════
+ */
+
+
+/* ── 1. ANCHO MÁXIMO DE PANELES FORMULARIO ─────────────────────────
+   Reemplaza style="max-width:Xpx" en los paneles de formularios.
+   Se aplica directamente sobre el elemento .panel.
+   ────────────────────────────────────────────────────────────────── */
+
+/* Formularios de médicos, pacientes y usuarios */
+.panel-sm { max-width: 700px; }
+
+/* Formulario de nuevo turno (más ancho por el selector de slots) */
+.panel-md { max-width: 780px; }
+
+
+/* ── 2. ESPACIADO ──────────────────────────────────────────────────
+   Helpers de margen para separar secciones dentro de un panel.
+   Se aplican sobre .form-grid, .form-group, .alerta, etc.
+   ────────────────────────────────────────────────────────────────── */
+.mb-14 { margin-bottom: 14px; }
+.mb-18 { margin-bottom: 18px; }
+.mb-20 { margin-bottom: 20px; }
+
+.mt-12 { margin-top: 12px; }
+.mt-20 { margin-top: 20px; }
+
+
+/* ── 3. GRILLA — CONTROL DE COLUMNAS ──────────────────────────────
+   Dentro de un .form-grid, hace que el campo ocupe todo el ancho.
+   Útil para campos como "Email" que deben ir solos en su fila.
+   ────────────────────────────────────────────────────────────────── */
+.col-full { grid-column: 1 / -1; }
+
+
+/* ── 4. LAYOUT FLEX ────────────────────────────────────────────────
+   Contenedores flex de uso frecuente en tablas y paneles.
+   ────────────────────────────────────────────────────────────────── */
+
+/* Par de botones horizontales (ej: Filtrar / Limpiar) */
+.btn-grupo { display: flex; gap: 8px; }
+
+/* Fila de accesos rápidos en el dashboard (admin / recepcionista) */
+.acciones-rapidas { display: flex; gap: 12px; flex-wrap: wrap; }
+
+/* Formulario en línea, sin que rompa el flujo del documento
+   Usado en el botón de dar de baja dentro de una celda de tabla */
+.d-inline { display: inline; }
+
+
+/* ── 5. PANEL HEADER CON SEPARADOR ────────────────────────────────
+   Agrega un borde superior al .panel-header cuando va precedido
+   por la barra de filtros (.filtros-bar), que ya tiene borde inferior.
+   ────────────────────────────────────────────────────────────────── */
+.panel-header--sep { border-top: 1px solid var(--borde); }
+
+
+/* ── 6. OVERFLOW ───────────────────────────────────────────────────
+   Oculta el desbordamiento en panels con tarjetas de avatar circular
+   (médicos en el dashboard), evitando que el borde izquierdo de
+   .medico-card.seleccionado se salga del panel.
+   ────────────────────────────────────────────────────────────────── */
+.panel--sin-overflow { overflow: hidden; }
+
+
+/* ── 7. FORMULARIO — ALINEACIÓN DEL GRUPO DE BOTONES ──────────────
+   Aplicado al .form-group que contiene el par Filtrar/Limpiar
+   para que los botones queden alineados al fondo de la barra.
+   ────────────────────────────────────────────────────────────────── */
+.form-group--fin { justify-content: flex-end; }
+
+/* Campo que ocupa todo el ancho de la grilla del formulario */
+.form-group--full { grid-column: 1 / -1; }
+
+/* Botón tipo enlace para "Ver más" (abre la descripción en un modal) */
+.btn-link-ver {
+    background: none;
+    border: none;
+    color: var(--azul);
+    cursor: pointer;
+    font-size: .8rem;
+    font-weight: 600;
+    padding: 0;
+    margin-left: 4px;
+    text-decoration: underline;
+}
+.btn-link-ver:hover { color: var(--azul-osc, #1239a8); }
+
+
+/* ── 8. TIPOGRAFÍA AUXILIAR ────────────────────────────────────────
+   Clases de texto de apoyo usadas en celdas de tabla, mensajes
+   de carga dinámica (fetch) y párrafos secundarios de formulario.
+   ────────────────────────────────────────────────────────────────── */
+
+/* Color gris genérico (hora de turno, plan, consultorio…) */
+.texto-gris { color: var(--gris); }
+
+/* Color rojo para mensajes de error generados por JavaScript */
+.texto-error { color: var(--rojo); }
+
+/* Texto secundario en celdas de tabla: especialidades, email, etc. */
+.texto-meta { font-size: .8rem; color: var(--gris); }
+
+/* Párrafo de instrucción/ayuda dentro de un formulario o modal */
+.texto-ayuda { font-size: .85rem; color: var(--gris); margin-bottom: 14px; }
+
+/* Texto de estado de carga o "sin resultados" inyectado por fetch */
+.texto-cargando { color: var(--gris); font-style: italic; }
+
+/* Impide salto de línea en celdas de tabla con acciones o fechas */
+.nowrap { white-space: nowrap; }
+
+
+/* ── PAGINADOR ─────────────────────────────────────────────────────
+   Controles del componente sistema/vistas/componentes/paginador.php,
+   usado por todos los listados largos.
+   ────────────────────────────────────────────────────────────────── */
+.paginador {
+    display: flex; align-items: center; justify-content: space-between;
+    flex-wrap: wrap; gap: 12px;
+    padding: 14px 20px; border-top: 1px solid var(--borde);
+}
+.paginador-info      { font-size: .82rem; color: var(--gris-med); font-weight: 500; }
+.paginador-controles { display: flex; align-items: center; gap: 5px; }
+
+.pag-btn {
+    min-width: 34px; height: 34px; padding: 0 9px;
+    display: inline-flex; align-items: center; justify-content: center;
+    border: 1.5px solid var(--borde); border-radius: 9px;
+    background: var(--blanco); color: var(--gris-med);
+    font-size: .82rem; font-weight: 600; text-decoration: none;
+    transition: border-color .15s, color .15s, background .15s;
+}
+.pag-btn:hover        { border-color: var(--azul); color: var(--azul); background: var(--azul-claro); text-decoration: none; }
+.pag-btn.activo       { background: var(--azul); border-color: var(--azul); color: var(--blanco); }
+.pag-btn.deshabilitado{ opacity: .4; cursor: default; }
+.pag-puntos           { color: var(--gris); padding: 0 3px; }
+
+@media (max-width: 560px) {
+    .paginador { flex-direction: column; align-items: stretch; text-align: center; }
+    .paginador-controles { justify-content: center; flex-wrap: wrap; }
+}
+
+
+/* ── 9. RESUMEN DE CONFIRMACIÓN DE TURNO ──────────────────────────
+   Caja informativa dentro del modal de reserva que muestra el
+   médico, especialidad, fecha, hora y consultorio elegidos.
+   ────────────────────────────────────────────────────────────────── */
+.resumen-confirmacion {
+    background:    var(--gris-claro);
+    border-radius: 8px;
+    padding:       14px;
+    margin-bottom: 16px;
+    font-size:     .87rem;
+    line-height:   1.8;
+}
+
+
+/* ── 10. PÁGINA DE ERROR 403 ───────────────────────────────────────
+   Estilos para la vista sistema/vistas/layouts/403.php, que es una
+   página standalone (no usa navbar.php) y necesita sus propios
+   estilos de centrado y tipografía de error.
+   ────────────────────────────────────────────────────────────────── */
+.pagina-403 {
+    display:         flex;
+    align-items:     center;
+    justify-content: center;
+    min-height:      100vh;
+    background:      var(--gris-claro);
+}
+.error-box         { text-align: center; padding: 40px; }
+.error-icono       { margin-bottom: 16px; }
+.error-titulo      { font-size: 1.4rem; color: var(--gris-osc); margin-bottom: 8px; }
+.error-descripcion { color: var(--gris); margin-bottom: 20px; }
