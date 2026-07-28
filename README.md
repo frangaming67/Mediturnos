@@ -189,7 +189,7 @@ paciente ──< turno >── medico
 ## Usuarios de prueba
 
 Los que crea `seed_datos.sql` en una instalación limpia, todos con la contraseña
-**`password123`**:
+**`password`**:
 
 | Usuario | Rol | Qué puede hacer |
 |---|---|---|
