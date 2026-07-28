@@ -1,0 +1,436 @@
+/* =============================================================
+ * publico/css/landing.css — Landing pública de MediTurnos
+ * =============================================================
+ * Hoja AUTOCONTENIDA: index.php es la única página que la carga.
+ * No pisa ni depende de estilos.css / dashboard.css / utilidades.css,
+ * por lo que no puede romper ninguna pantalla del sistema interno.
+ *
+ * Los tokens de :root son el nuevo design system (paleta, sombras,
+ * radios, tipografía). En la Fase 2 se propagan a la app interna
+ * para lograr una identidad visual única.
+ * ============================================================= */
+
+/* ── TOKENS ───────────────────────────────────────────────── */
+:root {
+    /* Azules: escala completa (antes había un solo azul plano) */
+    --azul:        #2563eb;
+    --azul-osc:    #1e3a8a;
+    --azul-med:    #1d4ed8;
+    --azul-soft:   #eff6ff;
+    --azul-soft2:  #dbeafe;
+    --azul-vivo:   #3b82f6;
+
+    --verde:       #16a34a;
+    --verde-cl:    #dcfce7;
+    --rojo:        #dc2626;
+    --rojo-cl:     #fee2e2;
+    --ambar:       #d97706;
+    --ambar-cl:    #fef3c7;
+
+    /* Neutros */
+    --tinta:       #0f172a;
+    --gris-osc:    #334155;
+    --gris:        #64748b;
+    --gris2:       #94a3b8;
+    --linea:       #e2e8f0;
+    --fondo:       #f8fafc;
+    --blanco:      #ffffff;
+
+    /* Sombras en 3 niveles (profundidad real, no un borde gris) */
+    --sm: 0 1px 3px rgba(15,23,42,.06), 0 1px 2px rgba(15,23,42,.04);
+    --md: 0 10px 30px -8px rgba(15,23,42,.15);
+    --lg: 0 24px 60px -16px rgba(15,23,42,.22);
+    --azul-glow: 0 10px 30px -8px rgba(37,99,235,.45);
+
+    --r-sm: 10px;
+    --r:    16px;
+    --r-lg: 22px;
+    --r-full: 999px;
+
+    --nav-h: 72px;
+    --ancho: 1200px;
+}
+
+/* ── RESET ────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+body {
+    font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+    background: var(--blanco);
+    color: var(--tinta);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;           /* ningún scroll horizontal en móvil */
+}
+a { color: inherit; text-decoration: none; }
+img { max-width: 100%; display: block; }
+button { font-family: inherit; cursor: pointer; border: none; background: none; }
+svg { flex-shrink: 0; }
+
+/* Accesibilidad: foco visible y consistente en toda la landing */
+:focus-visible {
+    outline: 3px solid var(--azul);
+    outline-offset: 3px;
+    border-radius: 6px;
+}
+/* Respeta a quien pidió menos movimiento (WCAG 2.3.3) */
+@media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    *, *::before, *::after {
+        animation-duration: .01ms !important;
+        transition-duration: .01ms !important;
+    }
+}
+
+/* Salto al contenido para lectores de pantalla / teclado */
+.skip {
+    position: absolute; left: -9999px; top: 0; z-index: 999;
+    background: var(--azul); color: #fff; padding: 12px 20px;
+    border-radius: 0 0 var(--r-sm) 0; font-weight: 600;
+}
+.skip:focus { left: 0; }
+
+.contenedor { max-width: var(--ancho); margin: 0 auto; padding: 0 24px; }
+
+/* ── NAVBAR ───────────────────────────────────────────────── */
+.lp-nav {
+    position: sticky; top: 0; z-index: 100;
+    height: var(--nav-h);
+    background: rgba(255,255,255,.85);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-bottom: 1px solid transparent;
+    transition: border-color .2s, box-shadow .2s;
+}
+.lp-nav.scrolled { border-bottom-color: var(--linea); box-shadow: var(--sm); }
+.lp-nav .contenedor {
+    height: 100%; display: flex; align-items: center; justify-content: space-between; gap: 20px;
+}
+.logo { display: flex; align-items: center; gap: 11px; font-weight: 800; font-size: 19px; letter-spacing: -.4px; }
+.logo .marca {
+    width: 40px; height: 40px; border-radius: 12px;
+    background: linear-gradient(135deg, var(--azul-vivo), var(--azul-osc));
+    display: grid; place-items: center; color: #fff;
+    box-shadow: var(--azul-glow);
+}
+.nav-links { display: flex; gap: 30px; font-size: 14.5px; font-weight: 500; color: var(--gris); }
+.nav-links a { transition: color .15s; }
+.nav-links a:hover { color: var(--azul); }
+/* Enlace que solo aparece dentro del menú hamburguesa (ver media query) */
+.solo-movil { display: none; }
+.nav-acciones { display: flex; align-items: center; gap: 10px; }
+
+.btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    padding: 12px 22px; border-radius: var(--r-sm);
+    font-weight: 600; font-size: 14.5px; line-height: 1;
+    transition: transform .15s, box-shadow .15s, background .15s, color .15s;
+    white-space: nowrap;
+}
+.btn-primario { background: var(--azul); color: #fff; box-shadow: var(--azul-glow); }
+.btn-primario:hover { background: var(--azul-med); transform: translateY(-2px); }
+.btn-fantasma { background: #fff; color: var(--gris-osc); border: 1.5px solid var(--linea); }
+.btn-fantasma:hover { border-color: var(--azul); color: var(--azul); }
+.btn-blanco { background: #fff; color: var(--azul); box-shadow: var(--md); }
+.btn-blanco:hover { transform: translateY(-2px); }
+.btn-lg { padding: 16px 32px; font-size: 16px; border-radius: 14px; }
+
+.nav-burger { display: none; width: 42px; height: 42px; border-radius: var(--r-sm); color: var(--gris-osc); }
+.nav-burger:hover { background: var(--fondo); }
+
+/* ── HERO ─────────────────────────────────────────────────── */
+.hero {
+    position: relative; overflow: hidden;
+    padding: 76px 0 84px;
+    background:
+        radial-gradient(900px 420px at 15% -10%, var(--azul-soft) 0%, transparent 70%),
+        radial-gradient(700px 380px at 95% 10%, #f0f9ff 0%, transparent 70%),
+        var(--blanco);
+}
+/* Cruces médicas decorativas (guiño a las plantillas de referencia) */
+.hero::before, .hero::after {
+    content: ""; position: absolute; border-radius: 50%;
+    background: radial-gradient(circle, var(--azul-soft2) 0%, transparent 70%);
+    pointer-events: none;
+}
+.hero::before { width: 420px; height: 420px; top: -140px; right: -120px; }
+.hero::after  { width: 300px; height: 300px; bottom: -120px; left: -110px; opacity: .6; }
+
+/* Hero CENTRADO (mismo criterio que el prototipo de referencia): todo
+   el peso visual va al título y al buscador, que es la acción principal
+   de la página. */
+.hero-centro {
+    position: relative; z-index: 1;
+    text-align: center;
+    display: flex; flex-direction: column; align-items: center;
+}
+
+/* Acceso a urgencias: fijo arriba a la derecha del hero. Es un enlace
+   tel: real, así que en el celular abre el marcador. */
+.urgencias {
+    position: absolute; top: 34px; right: 34px; z-index: 2;
+    display: inline-flex; align-items: center; gap: 9px;
+    background: var(--rojo); color: #fff;
+    font-weight: 700; font-size: 13.5px;
+    padding: 11px 18px; border-radius: 12px;
+    box-shadow: 0 10px 24px -6px rgba(220,38,38,.5);
+    transition: transform .15s, box-shadow .15s;
+}
+.urgencias:hover { transform: translateY(-2px); box-shadow: 0 14px 30px -6px rgba(220,38,38,.6); }
+.urgencias-punto {
+    width: 8px; height: 8px; border-radius: 50%; background: #fff;
+    animation: pulso-urg 1.8s infinite;
+}
+@keyframes pulso-urg {
+    0%   { box-shadow: 0 0 0 0 rgba(255,255,255,.7); }
+    70%  { box-shadow: 0 0 0 8px rgba(255,255,255,0); }
+    100% { box-shadow: 0 0 0 0 rgba(255,255,255,0); }
+}
+
+.hero-badge {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: var(--verde-cl); color: #15803d;
+    font-weight: 600; font-size: 13.5px;
+    padding: 7px 15px; border-radius: var(--r-full); margin-bottom: 22px;
+}
+.hero-badge .punto { width: 7px; height: 7px; border-radius: 50%; background: var(--verde); animation: latido 2s infinite; }
+@keyframes latido {
+    0%   { box-shadow: 0 0 0 0 rgba(22,163,74,.5); }
+    70%  { box-shadow: 0 0 0 7px rgba(22,163,74,0); }
+    100% { box-shadow: 0 0 0 0 rgba(22,163,74,0); }
+}
+.hero h1 {
+    font-size: clamp(32px, 5vw, 52px); line-height: 1.08;
+    font-weight: 800; letter-spacing: -1.8px; margin-bottom: 16px;
+    max-width: 720px;   /* el título corta en 2 líneas, como en la referencia */
+}
+.hero h1 .destaque {
+    background: linear-gradient(120deg, var(--azul), var(--azul-vivo));
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+.hero .bajada { font-size: 17px; color: var(--gris); max-width: 520px; margin-bottom: 30px; }
+
+/* Buscador del hero */
+.buscador {
+    background: #fff; border: 1px solid var(--linea); border-radius: var(--r);
+    box-shadow: var(--md); padding: 8px; display: flex; gap: 8px; align-items: center;
+    width: 100%; max-width: 620px;
+}
+.buscador .campo { flex: 1; display: flex; align-items: center; gap: 11px; padding: 0 14px; color: var(--gris2); min-width: 0; }
+.buscador input { flex: 1; min-width: 0; border: none; outline: none; font-size: 15.5px; font-family: inherit; padding: 14px 0; color: var(--tinta); background: transparent; }
+.buscador input::placeholder { color: var(--gris2); }
+
+.hero-chips { margin-top: 16px; font-size: 13.5px; color: var(--gris2); display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.hero-chips .chip-link {
+    color: var(--azul); font-weight: 600; background: var(--azul-soft);
+    padding: 5px 13px; border-radius: var(--r-full); transition: background .15s, transform .15s;
+}
+.hero-chips .chip-link:hover { background: var(--azul-soft2); transform: translateY(-1px); }
+
+/* ── BARRA DE CONFIANZA (datos reales de la base) ─────────── */
+.confianza { background: var(--tinta); color: #fff; padding: 34px 0; }
+.confianza-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px; text-align: center; }
+.confianza .v { font-size: 34px; font-weight: 800; letter-spacing: -1.2px; line-height: 1; }
+.confianza .l { font-size: 13px; color: var(--gris2); margin-top: 7px; font-weight: 500; }
+
+/* ── SECCIONES ────────────────────────────────────────────── */
+.seccion { padding: 88px 0; }
+.seccion.alt { background: var(--fondo); }
+.sec-titulo { text-align: center; max-width: 640px; margin: 0 auto 48px; }
+.sec-titulo .eyebrow {
+    font-size: 12.5px; font-weight: 700; letter-spacing: 1.4px;
+    text-transform: uppercase; color: var(--azul); margin-bottom: 10px;
+}
+.sec-titulo h2 { font-size: clamp(27px, 3.6vw, 38px); font-weight: 800; letter-spacing: -1.1px; line-height: 1.15; }
+.sec-titulo p { color: var(--gris); font-size: 16.5px; margin-top: 12px; }
+
+/* ── ESPECIALIDADES (desde la base) ─────────────────────────
+   6 columnas como en la referencia: entran las 8 especialidades en
+   dos filas parejas y las tarjetas quedan compactas y centradas. */
+.esp-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+@media (min-width: 1100px) { .esp-grid { grid-template-columns: repeat(4, 1fr); } }
+
+.esp-card {
+    background: #fff; border: 1px solid var(--linea); border-radius: var(--r);
+    padding: 24px 18px; text-align: center;
+    transition: transform .18s, box-shadow .18s, border-color .18s;
+    display: flex; flex-direction: column; align-items: center; gap: 4px;
+}
+.esp-card:hover { transform: translateY(-5px); box-shadow: var(--md); border-color: var(--azul); }
+.esp-card .ico {
+    width: 54px; height: 54px; border-radius: 15px;
+    background: var(--azul-soft); color: var(--azul);
+    display: grid; place-items: center; margin-bottom: 13px;
+    transition: background .18s, color .18s, transform .18s;
+}
+.esp-card:hover .ico { background: var(--azul); color: #fff; transform: scale(1.06); }
+.esp-card .n { font-weight: 700; font-size: 14.5px; color: var(--tinta); }
+.esp-card .m { font-size: 12.5px; color: var(--gris); }
+.esp-card .precio { margin-top: 9px; font-size: 13px; font-weight: 700; color: var(--azul); }
+
+/* ── MÉDICOS (desde la base) ──────────────────────────────── */
+.med-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 22px; }
+.med-card {
+    background: #fff; border: 1px solid var(--linea); border-radius: var(--r-lg);
+    overflow: hidden; transition: transform .18s, box-shadow .18s;
+    display: flex; flex-direction: column;
+}
+.med-card:hover { transform: translateY(-6px); box-shadow: var(--lg); }
+.med-foto {
+    aspect-ratio: 1; position: relative; overflow: hidden;
+    background: linear-gradient(145deg, var(--azul-soft), var(--azul-soft2));
+    display: grid; place-items: center;
+}
+.med-foto img { width: 100%; height: 100%; object-fit: cover; }
+/* Avatar con iniciales cuando aún no hay foto cargada */
+.med-foto .iniciales {
+    width: 92px; height: 92px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--azul-vivo), var(--azul-osc));
+    color: #fff; font-size: 32px; font-weight: 800; letter-spacing: -1px;
+    display: grid; place-items: center; box-shadow: var(--md);
+}
+.med-info { padding: 18px 20px 22px; flex: 1; display: flex; flex-direction: column; }
+.med-info .n { font-weight: 700; font-size: 16.5px; letter-spacing: -.3px; }
+.med-info .esp { font-size: 13.5px; color: var(--azul); font-weight: 600; margin-top: 3px; }
+.med-info .mat { font-size: 12.5px; color: var(--gris2); margin-top: 8px; }
+.med-info .btn { margin-top: 16px; width: 100%; }
+
+/* ── CÓMO FUNCIONA ───────────────────────────────────────── */
+.pasos { display: grid; grid-template-columns: repeat(3, 1fr); gap: 26px; position: relative; }
+.paso { text-align: center; padding: 0 14px; }
+.paso .num {
+    width: 62px; height: 62px; border-radius: 50%; margin: 0 auto 18px;
+    background: #fff; border: 2px solid var(--azul-soft2); color: var(--azul);
+    display: grid; place-items: center; font-size: 22px; font-weight: 800;
+    box-shadow: var(--sm); position: relative; z-index: 1;
+}
+.paso h3 { font-size: 18px; font-weight: 700; margin-bottom: 8px; }
+.paso p { color: var(--gris); font-size: 14.5px; }
+
+/* ── BENEFICIOS ──────────────────────────────────────────── */
+.ben-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px; }
+.ben {
+    background: #fff; border: 1px solid var(--linea); border-radius: var(--r);
+    padding: 28px 24px; transition: transform .18s, box-shadow .18s;
+}
+.ben:hover { transform: translateY(-4px); box-shadow: var(--md); }
+.ben .ico { width: 50px; height: 50px; border-radius: 14px; display: grid; place-items: center; margin-bottom: 16px; }
+.ben h3 { font-size: 17px; font-weight: 700; margin-bottom: 7px; }
+.ben p { color: var(--gris); font-size: 14.5px; }
+
+/* ── TESTIMONIOS ─────────────────────────────────────────── */
+.test-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px; }
+.test {
+    background: #fff; border: 1px solid var(--linea); border-radius: var(--r);
+    padding: 26px; box-shadow: var(--sm); display: flex; flex-direction: column;
+}
+.test .estrellas { color: #f59e0b; letter-spacing: 2px; margin-bottom: 13px; font-size: 15px; }
+.test p { font-size: 14.8px; color: var(--gris-osc); line-height: 1.65; flex: 1; }
+.test .quien { display: flex; align-items: center; gap: 12px; margin-top: 20px; }
+.test .av { width: 44px; height: 44px; border-radius: 50%; color: #fff; font-weight: 700; display: grid; place-items: center; font-size: 15px; }
+.test .nm { font-weight: 700; font-size: 14.5px; }
+.test .rl { font-size: 12.5px; color: var(--gris); }
+
+/* ── FAQ (accordion accesible) ───────────────────────────── */
+.faq { max-width: 780px; margin: 0 auto; display: flex; flex-direction: column; gap: 12px; }
+.faq-item { background: #fff; border: 1px solid var(--linea); border-radius: var(--r); overflow: hidden; transition: box-shadow .18s, border-color .18s; }
+.faq-item.abierto { border-color: var(--azul-soft2); box-shadow: var(--md); }
+.faq-q {
+    width: 100%; text-align: left; padding: 20px 24px;
+    font-weight: 600; font-size: 16px; color: var(--tinta);
+    display: flex; align-items: center; justify-content: space-between; gap: 16px;
+}
+.faq-q .mas { color: var(--azul); font-size: 22px; font-weight: 400; transition: transform .25s; flex-shrink: 0; }
+.faq-item.abierto .faq-q .mas { transform: rotate(45deg); }
+.faq-a { max-height: 0; overflow: hidden; transition: max-height .3s ease; }
+.faq-a p { padding: 0 24px 22px; color: var(--gris); font-size: 14.8px; }
+
+/* ── CTA FINAL ───────────────────────────────────────────── */
+.cta {
+    background: linear-gradient(135deg, var(--azul) 0%, var(--azul-osc) 100%);
+    color: #fff; text-align: center; padding: 78px 0; position: relative; overflow: hidden;
+}
+.cta::before {
+    content: ""; position: absolute; width: 560px; height: 560px; border-radius: 50%;
+    background: radial-gradient(circle, rgba(255,255,255,.10) 0%, transparent 70%);
+    top: -220px; right: -140px;
+}
+.cta .contenedor { position: relative; z-index: 1; }
+.cta h2 { font-size: clamp(27px, 3.6vw, 38px); font-weight: 800; letter-spacing: -1.1px; margin-bottom: 12px; }
+.cta p { font-size: 17px; opacity: .9; margin-bottom: 30px; }
+.cta-botones { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
+.cta .btn-borde { border: 1.5px solid rgba(255,255,255,.4); color: #fff; }
+.cta .btn-borde:hover { background: rgba(255,255,255,.12); }
+
+/* ── FOOTER ──────────────────────────────────────────────── */
+.pie { background: var(--tinta); color: var(--gris2); padding: 62px 0 0; }
+.pie-grid { display: grid; grid-template-columns: 1.6fr 1fr 1fr 1fr; gap: 40px; padding-bottom: 46px; }
+.pie .logo { color: #fff; margin-bottom: 14px; }
+.pie .desc { font-size: 14px; max-width: 300px; line-height: 1.7; }
+.pie h4 { color: #fff; font-size: 14.5px; font-weight: 700; margin-bottom: 16px; }
+.pie ul { list-style: none; display: flex; flex-direction: column; gap: 10px; font-size: 14px; }
+.pie a { transition: color .15s; }
+.pie a:hover { color: #fff; }
+.pie-bajo {
+    border-top: 1px solid rgba(255,255,255,.1); padding: 22px 0;
+    display: flex; justify-content: space-between; align-items: center; gap: 16px;
+    font-size: 13px; flex-wrap: wrap;
+}
+
+/* ── ANIMACIÓN DE APARICIÓN AL SCROLL ────────────────────── */
+/* MEJORA PROGRESIVA: por defecto el contenido SIEMPRE es visible.
+   Solo se oculta para animarlo cuando el script confirmó que puede
+   hacerlo (agrega .js-anim al <html>). Así, si el JS falla, está
+   deshabilitado, o el IntersectionObserver no dispara, la página se
+   ve igual en vez de quedar en blanco. Nunca se oculta contenido
+   dependiendo de que un script llegue a ejecutarse. */
+.js-anim .reveal {
+    opacity: 0;
+    transform: translateY(24px);
+    transition: opacity .6s ease, transform .6s ease;
+}
+.js-anim .reveal.visible { opacity: 1; transform: none; }
+
+/* ── RESPONSIVE ──────────────────────────────────────────── */
+@media (max-width: 1024px) {
+    .esp-grid, .med-grid { grid-template-columns: repeat(3, 1fr); }
+    .pie-grid { grid-template-columns: 1fr 1fr; gap: 32px; }
+}
+@media (max-width: 860px) {
+    .nav-links { display: none; }
+    .nav-burger { display: grid; place-items: center; }
+    .confianza-grid { grid-template-columns: repeat(2, 1fr); gap: 26px; }
+    .esp-grid, .med-grid, .ben-grid, .test-grid, .pasos { grid-template-columns: repeat(2, 1fr); }
+    .seccion { padding: 64px 0; }
+    /* El botón de urgencias deja de flotar y pasa a formar parte del
+       flujo, arriba del título: en pantallas chicas taparía el hero. */
+    .urgencias {
+        position: static; margin: 0 auto 20px;
+        display: inline-flex; align-self: center;
+    }
+    .hero { padding: 40px 0 62px; }
+}
+@media (max-width: 560px) {
+    .esp-grid, .med-grid, .ben-grid, .test-grid, .pasos, .pie-grid { grid-template-columns: 1fr; }
+    .hero { padding: 32px 0 52px; }
+    .buscador { flex-direction: column; align-items: stretch; padding: 12px; }
+    .buscador .campo { padding: 0 4px; }
+    .buscador .btn { width: 100%; }
+    .contenedor { padding: 0 18px; }
+    .pie-bajo { flex-direction: column; text-align: center; }
+
+    /* En 375px no entran logo + 2 botones + burger: la barra desbordaba
+       y aparecía scroll horizontal. Se oculta "Ingresar" (queda accesible
+       desde el menú hamburguesa y desde el CTA final) y se compacta el
+       botón principal, que es la acción que de verdad importa. */
+    .nav-acciones .btn-fantasma { display: none; }
+    .nav-acciones { gap: 6px; }
+    .nav-acciones .btn { padding: 10px 14px; font-size: 13.5px; }
+    .logo { font-size: 17px; gap: 8px; }
+    .logo .marca { width: 34px; height: 34px; border-radius: 10px; }
+    /* "Ingresar" reaparece dentro del menú hamburguesa, destacado */
+    .solo-movil {
+        display: block; color: var(--azul); font-weight: 600;
+        padding-top: 14px; border-top: 1px solid var(--linea);
+    }
+}
