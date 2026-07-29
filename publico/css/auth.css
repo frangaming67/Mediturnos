@@ -382,11 +382,9 @@
 .requisitos li.ok { color: var(--verde); }
 .requisitos li.ok .marca { color: var(--verde); }
 
-/* Sólo para lectores de pantalla (un placeholder NO es una etiqueta) */
-.solo-lectores {
-    position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
-    overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
-}
+/* .solo-lectores se movió a estilos.css: la necesitan también las
+   pantallas del sistema, que no cargan esta hoja. Ahí está definida una
+   sola vez para los dos mundos. */
 
 /* ── Responsive ──────────────────────────────────────────────── */
 @media (max-width: 900px) {

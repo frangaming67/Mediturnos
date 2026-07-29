@@ -20,9 +20,18 @@
 // Requiere que BASE_URL y $_SESSION['rol'] estén definidos antes de incluir.
 // Variable propia del navbar: NO usar $usuario para no pisar datos que la vista
 // haya cargado antes (p. ej. el usuario seleccionado en usuarios/editar.php).
+// Las variables de este archivo llevan el sufijo "Sesion" a propósito.
+// `require` comparte el ámbito: todo lo que se declare acá PISA lo que la
+// vista haya definido antes con el mismo nombre. Ya estaba resuelto para
+// $usuario; faltaba $iniciales, y la trampa se cobró una: agendar.php
+// definía $iniciales como una función para dibujar el avatar de cada
+// médico, el navbar la reemplazaba por el string con las iniciales del
+// usuario logueado, y al invocarla PHP moría con "Call to undefined
+// function DP()" — DP eran, justamente, las iniciales de quien estaba
+// mirando la página.
 $usuarioSesion = usuarioActual();
 $rolActual = $usuarioSesion['rol'];
-$iniciales = strtoupper(substr($usuarioSesion['nombre'],0,1) . substr($usuarioSesion['apellido'],0,1));
+$inicialesSesion = strtoupper(substr($usuarioSesion['nombre'],0,1) . substr($usuarioSesion['apellido'],0,1));
 
 // Foto de perfil: se lee de la sesión (la guarda el login) para no hacer una
 // consulta extra en CADA página del sistema sólo para dibujar un avatar de
@@ -188,7 +197,7 @@ $fotoSesion = SubidaImagen::url($_SESSION['foto'] ?? null);
                 <?php if ($fotoSesion): ?>
                     <img src="<?= htmlspecialchars($fotoSesion) ?>" alt="">
                 <?php else: ?>
-                    <?= $iniciales ?>
+                    <?= $inicialesSesion ?>
                 <?php endif; ?>
             </div>
             <div class="user-info">
