@@ -141,7 +141,13 @@ la vista, no el modelo.
 | Trigger | Cuándo | Qué hace |
 |---|---|---|
 | `trg_turno_after_insert` | Tras crear un turno | Registra el estado inicial |
-| `trg_turno_after_update` | Tras modificarlo | Registra el cambio **sólo si cambió el estado** |
+| `trg_turno_after_update` | Tras modificarlo | Registra el cambio de estado **y** el de horario |
+
+> `trg_turno_after_update` originalmente sólo miraba el estado, así que un turno
+> que cambiaba de fecha pasaba sin dejar rastro. Desde `reprogramacion.sql`
+> también registra el movimiento (`Reprogramado: 25/07 10:00 → 26/07 08:00`).
+> Se extendió el trigger en vez de insertar desde PHP para que el cambio quede
+> asentado venga de donde venga, incluso de un `UPDATE` hecho a mano.
 
 Por eso los modelos **no** insertan en `historial_turno` a mano: quedaría duplicado.
 
@@ -180,6 +186,7 @@ Ejecutar **en este orden** (cada una asume la anterior):
 | 11 | `auth_v2.sql` | Autenticación v2 |
 | 12 | `perfil.sql` | Columnas de contacto editables desde el perfil |
 | 13 | `notificaciones.sql` | Centro de notificaciones |
+| 14 | `reprogramacion.sql` | El trigger también registra el cambio de horario |
 
 ## Defectos de esquema corregidos en `auth_v2.sql`
 
