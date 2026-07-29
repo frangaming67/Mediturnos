@@ -29,11 +29,31 @@ caiga a Times si Google Fonts no carga.
 | `dashboard.css` | Sólo el calendario del paciente |
 | `medico.css` | Sólo la agenda del médico (se carga únicamente para ese rol) |
 | `landing.css` | Sólo la landing (autocontenido) |
-| `auth.css` | Login, registro y recuperación |
+| `auth.css` | Login, registro y recuperación **+ widgets de formulario reutilizables** |
+| `perfil.css` | Sólo "Mi perfil" |
 | `utilidades.css` | Helpers de una sola propiedad, para evitar estilos en línea |
 
 Están separados por **responsabilidad**, no por rendimiento: los tres primeros se
 cargan siempre juntos.
+
+### Hojas de una sola pantalla
+
+`navbar.php` lee una variable opcional `$cssExtra` que la vista declara antes de
+incluirlo:
+
+```php
+$cssExtra = ['auth.css', 'perfil.css'];
+require_once __DIR__ . '/sistema/vistas/layouts/navbar.php';
+```
+
+Se cargan al final, después de `estilos.css`, así que pueden ajustar lo que este
+definió. Sin la variable no cambia nada: las ~30 vistas anteriores siguen igual.
+
+> `perfil.php` carga también `auth.css` aunque no sea una pantalla de
+> autenticación. Ahí viven la zona de arrastrar la foto, el medidor de fortaleza,
+> la lista de requisitos y el aviso de Bloq Mayús, que el perfil reutiliza tal
+> cual. Copiarlos sería duplicar CSS ya probado para que después los dos se
+> separen. Está anotado en la deuda técnica que merecen un archivo propio.
 
 ## Mejora progresiva
 

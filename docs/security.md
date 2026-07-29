@@ -10,8 +10,8 @@
 | CSRF | ✅ | Token por sesión comparado con `hash_equals` |
 | Session Fixation | ✅ | `session_regenerate_id(true)` al autenticar |
 | Session Hijacking | ⚠️ Parcial | Cookie `HttpOnly` + `SameSite`, timeout 30 min. `Secure` requiere HTTPS |
-| Fuerza bruta | ✅ | 5 intentos / 15 min por identificador + IP |
-| IDOR | ✅ | Filtro por propiedad en el SQL y verificación por recurso |
+| Fuerza bruta | ✅ | 5 intentos / 15 min por identificador + IP. También al cambiar la contraseña desde el perfil |
+| IDOR | ✅ | Filtro por propiedad en el SQL y verificación por recurso. En el perfil, el id **nunca** viaja en el formulario |
 | Enumeración de usuarios | ✅ | La recuperación responde igual exista o no la cuenta |
 | Subida de archivos | ✅ | Tipo real + re-codificación + nombre aleatorio + `.htaccess` |
 | Clickjacking | ✅ | `X-Frame-Options: DENY` |
@@ -79,6 +79,25 @@ navegador: los tres los controla quien sube el archivo.
 
 **Verificado:** un archivo `.jpg` que contenía código PHP fue rechazado, y pedir un
 `.php` dentro de esa carpeta devuelve `403`.
+
+## IDOR: el id que nunca sale del servidor
+
+Todas las pantallas de "mi perfil" tienen el mismo riesgo: si el id del usuario
+viaja en un campo oculto del formulario, cualquiera lo edita y escribe sobre la
+cuenta de otro.
+
+Acá ningún método del controlador recibe un id por parámetro desde el navegador.
+Todos trabajan sobre el perfil que `perfil.php` cargó a partir de
+`$_SESSION['id_usuario']`:
+
+```php
+$perfil = $modelo->cargar((int) $_SESSION['id_usuario']);
+$ctrl->guardarCuenta($perfil, $_POST);   // el id sale de $perfil, no de $_POST
+```
+
+**Verificado con un ataque real:** un POST que incluía `id_usuario`, `id` e
+`id_paciente` de otra cuenta no modificó ni un campo de esa cuenta; el cambio
+cayó, como corresponde, sobre la del atacante.
 
 ## Cabeceras HTTP
 
