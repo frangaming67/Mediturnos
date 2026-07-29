@@ -9,6 +9,18 @@ Versionado según [SemVer](https://semver.org/lang/es/).
 
 ### Agregado
 
+**Agendar en cuatro pasos** — ver [area-paciente.md](area-paciente.md)
+- Especialidad → Profesional → Día → Horario → Confirmación, cada paso con su
+  propia URL: el botón "atrás" funciona y la pantalla anda sin JavaScript
+- Los profesionales se muestran con foto, matrícula, consultorios y calificación
+- Calendario de 4 semanas con la cantidad de horarios libres por día
+- Resumen final con duración, precio, cobertura, monto con descuento aplicado,
+  método de pago y aceptación de términos (validada también en el servidor)
+- Si otra persona toma el horario mientras se elige, el resumen lo detecta y
+  avisa antes de confirmar
+- **Calificación de profesionales**: sólo se puede calificar un turno realizado
+  propio, una sola vez, con el puntaje acotado por el motor
+
 **Panel del paciente** — ver [area-paciente.md](area-paciente.md)
 - Menú propio: Inicio · Agendar cita · Mis turnos · Mis pagos · Mi perfil
 - El inicio pasa a ser el resumen de la cuenta (antes era el calendario de
@@ -50,6 +62,14 @@ Versionado según [SemVer](https://semver.org/lang/es/).
   turno sin pagar: con el monto en cero el pago se da por saldado solo y el
   turno se confirma. Ahora sólo se ofrecen —y se aceptan— las coberturas
   propias más el pago particular.
+- **`navbar.php` pisaba variables de la vista.** Se incluye con `require`, que
+  comparte el ámbito: su `$iniciales` (un string) reemplazaba a la función del
+  mismo nombre que `agendar.php` usaba para dibujar los avatares, y la página
+  moría con `Call to undefined function DP()` — las iniciales de quien estuviera
+  mirando. Ahora se llama `$inicialesSesion`.
+- **`--gris2` no existía fuera de la portada.** Estaba definida sólo en
+  `landing.css`; `auth.css` la usaba seis veces, así que el color de los iconos
+  y placeholders del login y el registro caía al heredado sin que se notara.
 - **`obtenerSlots()` hacía una consulta por horario.** Una jornada de 8 a 16 con
   turnos de 20 minutos eran 24 consultas para dibujar una grilla. Ahora es una.
 - **Un turno que cambiaba de fecha no dejaba rastro**: el trigger de historial
