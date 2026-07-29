@@ -364,6 +364,134 @@ public function reservar(array $datos): int
         return $stmt->fetchAll();
     }
 
+    /**
+     * Qué días puede atenderse un paciente con este médico en esta
+     * especialidad, para pintar el calendario del paso 3.
+     *
+     * ── POR QUÉ NO SE LLAMA A obtenerSlots() DÍA POR DÍA ─────
+     * Sería lo obvio y es lo que hay que evitar: para un mes son 30
+     * llamadas, cada una con sus propias consultas. Acá se resuelve con
+     * TRES consultas para todo el rango:
+     *
+     *   1. Los horarios del médico → cuántos turnos entran en cada día
+     *      de la semana (se calcula una vez, no por fecha).
+     *   2. Las ausencias del período.
+     *   3. Cuántos turnos activos ya tiene por fecha.
+     *
+     * y después se comparan los tres en memoria.
+     *
+     * El único día que se calcula exacto es HOY, con obtenerSlots(): las
+     * horas que ya pasaron reducen la disponibilidad y el conteo por día
+     * de la semana no las contempla. Un día que figure libre y al entrar
+     * no tenga horarios es de las cosas que más desconfianza generan.
+     *
+     * Devuelve, por fecha: si se puede reservar y por qué no, cuando no.
+     */
+    public function diasDisponibles(int $matricula, int $idEspecialidad,
+                                    string $desde, int $cantidadDias = 28): array
+    {
+        // 1) Cuántos turnos entran por día de la semana
+        $stmt = $this->pdo->prepare(
+            "SELECT h.dia_semana, h.hora_inicio, h.hora_fin, e.duracion_turno_min
+             FROM   horario_atencion h
+             JOIN   especialidad e ON e.id_especialidad = h.id_especialidad
+             WHERE  h.matricula = :m AND h.id_especialidad = :esp"
+        );
+        $stmt->execute([':m' => $matricula, ':esp' => $idEspecialidad]);
+
+        $cupoPorDia = [];
+        foreach ($stmt->fetchAll() as $h) {
+            $duracion = max(5, (int) ($h['duracion_turno_min'] ?? 20));
+            $minutos  = (strtotime($h['hora_fin']) - strtotime($h['hora_inicio'])) / 60;
+            $cupoPorDia[$h['dia_semana']] = ($cupoPorDia[$h['dia_semana']] ?? 0)
+                                          + (int) floor($minutos / $duracion);
+        }
+
+        $hasta = date('Y-m-d', strtotime($desde . ' +' . ($cantidadDias - 1) . ' days'));
+
+        // 2) Ausencias del período
+        $ausentes = [];
+        try {
+            $st = $this->pdo->prepare(
+                "SELECT fecha FROM ausencia_medico
+                 WHERE matricula = :m AND fecha BETWEEN :d1 AND :d2"
+            );
+            $st->execute([':m' => $matricula, ':d1' => $desde, ':d2' => $hasta]);
+            $ausentes = array_flip($st->fetchAll(PDO::FETCH_COLUMN));
+        } catch (PDOException $e) {
+            // Sin la migración de ausencias el calendario sigue andando.
+            error_log('Turno diasDisponibles ausencias: ' . $e->getMessage());
+        }
+
+        // 3) Turnos activos ya tomados, por fecha
+        $st = $this->pdo->prepare(
+            "SELECT fecha, COUNT(*) AS tomados
+             FROM   turno
+             WHERE  matricula = :m AND fecha BETWEEN :d1 AND :d2
+               AND  id_estado <> (SELECT id_estado FROM estado_turno WHERE descripcion = 'Cancelado')
+             GROUP  BY fecha"
+        );
+        $st->execute([':m' => $matricula, ':d1' => $desde, ':d2' => $hasta]);
+        $tomados = [];
+        foreach ($st->fetchAll() as $r) {
+            $tomados[$r['fecha']] = (int) $r['tomados'];
+        }
+
+        $nombreDia = [1 => 'Lunes', 2 => 'Martes', 3 => 'Miercoles',
+                      4 => 'Jueves', 5 => 'Viernes', 6 => 'Sabado', 7 => 'Domingo'];
+        $hoy  = date('Y-m-d');
+        $dias = [];
+
+        for ($i = 0; $i < $cantidadDias; $i++) {
+            $fecha = date('Y-m-d', strtotime($desde . ' +' . $i . ' days'));
+            $cupo  = $cupoPorDia[$nombreDia[(int) date('N', strtotime($fecha))]] ?? 0;
+            $libres = max(0, $cupo - ($tomados[$fecha] ?? 0));
+
+            $motivo = null;
+            if ($fecha < $hoy)                  $motivo = 'pasado';
+            elseif ($cupo === 0)                $motivo = 'sin_agenda';
+            elseif (isset($ausentes[$fecha]))   $motivo = 'ausente';
+            elseif ($libres === 0)              $motivo = 'completo';
+
+            // Hoy se calcula exacto: las horas que ya pasaron no cuentan.
+            if ($motivo === null && $fecha === $hoy) {
+                $libres = count($this->obtenerSlots($matricula, $fecha));
+                if ($libres === 0) $motivo = 'completo';
+            }
+
+            $dias[] = [
+                'fecha'      => $fecha,
+                'disponible' => $motivo === null,
+                'motivo'     => $motivo,
+                'libres'     => $motivo === null ? $libres : 0,
+            ];
+        }
+
+        return $dias;
+    }
+
+    /**
+     * Especialidades que se pueden reservar HOY, con su precio y cuántos
+     * profesionales las atienden.
+     *
+     * Sólo aparecen las que tienen al menos un médico activo CON agenda
+     * cargada: ofrecer una especialidad que después no muestra ningún
+     * profesional es hacerle perder un clic a la persona para llegar a
+     * una pantalla vacía.
+     */
+    public function especialidadesParaReserva(): array
+    {
+        return $this->pdo->query(
+            "SELECT e.id_especialidad, e.nombre, e.precio_consulta, e.duracion_turno_min,
+                    COUNT(DISTINCT m.matricula) AS medicos
+             FROM   especialidad e
+             JOIN   horario_atencion h ON h.id_especialidad = e.id_especialidad
+             JOIN   medico m ON m.matricula = h.matricula AND m.estado = 'activo'
+             GROUP  BY e.id_especialidad, e.nombre, e.precio_consulta, e.duracion_turno_min
+             ORDER  BY e.nombre"
+        )->fetchAll();
+    }
+
     /** Nombre, duración y precio de una especialidad. */
     public function datosEspecialidad(int $idEspecialidad): array|false
     {
