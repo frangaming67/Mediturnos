@@ -53,6 +53,9 @@ class ControladorAuth
         $_SESSION['permisos']     = $user['permisos'];
         $_SESSION['id_paciente']   = $user['id_paciente'];
         $_SESSION['matricula']     = $user['matricula'];
+        // La foto va a la sesión para que el avatar de la barra lateral no
+        // obligue a consultar la base en cada página del sistema.
+        $_SESSION['foto']          = $user['foto'];
         $_SESSION['ultimo_acceso'] = time();
         // Registrar login en DB
         $this->modelo->registrarLogin($user['id_usuario']);
