@@ -17,6 +17,7 @@
 | Clickjacking | ✅ | `X-Frame-Options: DENY` |
 | Credenciales expuestas | ✅ | `config/mail.php` en `.gitignore` |
 | Contraseñas | ✅ | bcrypt vía `password_hash` |
+| Campos enviados como array | ⚠️ Parcial | Cubierto en el perfil (`ControladorPerfil::texto()`). Los formularios anteriores todavía asumen texto |
 
 ## Consultas preparadas
 

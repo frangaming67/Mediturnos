@@ -55,7 +55,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     } else {
         csrf_verificar();
-        $seccion = (string) ($_POST['seccion'] ?? '');
+        // is_string, no un cast: con `seccion[]=x` el valor llega como array
+        // y castearlo dispararía un warning. Si no es texto, no es una
+        // sección válida y cae en el `default` del match.
+        $seccion = is_string($_POST['seccion'] ?? null) ? $_POST['seccion'] : '';
 
         $r = match ($seccion) {
             'cuenta'    => $ctrl->guardarCuenta($perfil, $_POST),
@@ -101,8 +104,8 @@ foreach ($planes as $pl) {
  * de la base. Así un error no borra lo que la persona había escrito.
  */
 $v = fn(string $campo, ?string $def = '') =>
-    ($errorSeccion !== null && isset($_POST[$campo]))
-        ? (string) $_POST[$campo]
+    ($errorSeccion !== null && is_string($_POST[$campo] ?? null))
+        ? $_POST[$campo]
         : (string) ($def ?? '');
 
 $fotoUrl   = SubidaImagen::url($perfil['foto']);

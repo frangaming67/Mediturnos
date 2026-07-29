@@ -24,6 +24,13 @@
 
 require_once __DIR__ . '/../../includes/validacion.php';
 require_once __DIR__ . '/../../includes/subida_imagen.php';
+// cambiarPassword() usa loginBloqueado(), registrarIntentoLogin(),
+// intentosRestantes() y LOGIN_VENTANA_MIN. Hoy funciona porque perfil.php
+// incluye seguridad.php antes que a este archivo, pero depender de eso es
+// frágil: el día que alguien use este controlador desde otro punto de
+// entrada se cae con un error fatal de función indefinida. Cada archivo
+// declara lo que necesita.
+require_once __DIR__ . '/../../includes/seguridad.php';
 require_once __DIR__ . '/../modelos/Perfil.php';
 require_once __DIR__ . '/../modelos/Usuario.php';
 
@@ -44,15 +51,37 @@ class ControladorPerfil
     private function error(string $msg): array { return ['ok' => false, 'msg' => $msg]; }
     private function exito(string $msg): array { return ['ok' => true,  'msg' => $msg]; }
 
+    /**
+     * Lee un campo del POST como texto.
+     *
+     * El `is_string` no es paranoia: un formulario enviado a mano con
+     * `nombre[]=a&nombre[]=b` hace que $_POST['nombre'] sea un ARRAY, y
+     * `trim()` sobre un array lanza TypeError en PHP 8 — o sea, un error
+     * 500 que cualquiera puede provocar. Si no es texto, no es un valor
+     * válido: se trata como vacío y la validación normal lo rechaza.
+     *
+     * $recortar es false para las contraseñas: un espacio al principio o
+     * al final es parte de la contraseña y quitarlo en silencio haría que
+     * la persona no pudiera volver a entrar con lo que escribió.
+     */
+    private function texto(array $post, string $clave, bool $recortar = true): string
+    {
+        $valor = $post[$clave] ?? '';
+        if (!is_string($valor)) {
+            return '';
+        }
+        return $recortar ? trim($valor) : $valor;
+    }
+
     // =============================================================
     // DATOS DE LA CUENTA — nombre, apellido, correo
     // =============================================================
 
     public function guardarCuenta(array $perfil, array $post): array
     {
-        $nombre   = trim($post['nombre']   ?? '');
-        $apellido = trim($post['apellido'] ?? '');
-        $email    = trim($post['email']    ?? '');
+        $nombre   = $this->texto($post, 'nombre');
+        $apellido = $this->texto($post, 'apellido');
+        $email    = $this->texto($post, 'email');
 
         if ($err = Validacion::nombre($nombre, 'El nombre'))     return $this->error($err);
         if ($err = Validacion::nombre($apellido, 'El apellido')) return $this->error($err);
@@ -95,14 +124,14 @@ class ControladorPerfil
 
     public function guardarDatos(array $perfil, array $post): array
     {
-        $telefono = trim($post['telefono'] ?? '');
+        $telefono = $this->texto($post, 'telefono');
         if ($err = Validacion::telefono($telefono)) return $this->error($err);
 
         try {
             if (!empty($perfil['id_paciente'])) {
-                $fechaNac  = trim($post['fecha_nac'] ?? '');
-                $sexo      = trim($post['sexo']      ?? '');
-                $direccion = trim($post['direccion'] ?? '');
+                $fechaNac  = $this->texto($post, 'fecha_nac');
+                $sexo      = $this->texto($post, 'sexo');
+                $direccion = $this->texto($post, 'direccion');
 
                 if ($err = Validacion::fechaNac($fechaNac))   return $this->error($err);
                 if ($err = Validacion::sexo($sexo))           return $this->error($err);
@@ -143,8 +172,8 @@ class ControladorPerfil
             return $this->error('Sólo las cuentas de paciente tienen cobertura médica.');
         }
 
-        $idPlan = trim($post['id_plan'] ?? '');
-        $nro    = trim($post['nro_afiliado'] ?? '');
+        $idPlan = $this->texto($post, 'id_plan');
+        $nro    = $this->texto($post, 'nro_afiliado');
 
         if ($idPlan === '') {
             // Sin obra social no puede sobrevivir un número de afiliado
@@ -255,9 +284,9 @@ class ControladorPerfil
      */
     public function cambiarPassword(array $perfil, array $post): array
     {
-        $actual = (string) ($post['password_actual'] ?? '');
-        $nueva  = (string) ($post['password_nueva']  ?? '');
-        $nueva2 = (string) ($post['password_nueva2'] ?? '');
+        $actual = $this->texto($post, 'password_actual', false);
+        $nueva  = $this->texto($post, 'password_nueva',  false);
+        $nueva2 = $this->texto($post, 'password_nueva2', false);
 
         if ($actual === '') {
             return $this->error('Ingresá tu contraseña actual.');
