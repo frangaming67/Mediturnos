@@ -82,6 +82,43 @@ $fotoSesion = SubidaImagen::url($_SESSION['foto'] ?? null);
     </div>
 
     <nav class="sidebar-nav">
+    <?php
+    // El paciente ve un menú COMPLETAMENTE distinto al del personal, no
+    // una versión recortada. No es lo mismo alguien que administra la
+    // clínica que alguien que viene a atenderse: al paciente le importan
+    // su próxima cita, su salud y su cuenta, y palabras como "Agenda" o
+    // "Gestión" no significan nada para él.
+    //
+    // Se resuelve con una bifurcación acá y no con un layout aparte para
+    // no duplicar el <head>, la barra superior y el pie: lo único que
+    // cambia entre los dos mundos son estos enlaces.
+    if ($rolActual === 'paciente'):
+        $aqui = basename($_SERVER['PHP_SELF']);
+    ?>
+        <a href="<?= BASE_URL ?>dashboard.php" class="nav-link <?= $aqui === 'dashboard.php' ? 'activo' : '' ?>">
+            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg>
+            Inicio
+        </a>
+        <a href="<?= BASE_URL ?>agendar.php" class="nav-link <?= $aqui === 'agendar.php' ? 'activo' : '' ?>">
+            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18M12 14v4M10 16h4"/></svg>
+            Agendar cita
+        </a>
+        <a href="<?= BASE_URL ?>sistema/controladores/ControladorTurno.php?accion=index" class="nav-link <?= $aqui === 'ControladorTurno.php' ? 'activo' : '' ?>">
+            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+            Mis turnos
+        </a>
+        <a href="<?= BASE_URL ?>sistema/controladores/ControladorPago.php?accion=index" class="nav-link <?= $aqui === 'ControladorPago.php' ? 'activo' : '' ?>">
+            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
+            Mis pagos
+        </a>
+        <a href="<?= BASE_URL ?>perfil.php" class="nav-link <?= $aqui === 'perfil.php' ? 'activo' : '' ?>">
+            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            Mi perfil
+        </a>
+        <?php // Historial, Recetas y Notificaciones se agregan cuando su
+              // pantalla exista de verdad. Un menú con enlaces que no
+              // llevan a ninguna parte es peor que un menú corto. ?>
+    <?php else: ?>
         <div class="nav-section">General</div>
         <a href="<?= BASE_URL ?>dashboard.php" class="nav-link <?= basename($_SERVER['PHP_SELF']) === 'dashboard.php' ? 'activo' : '' ?>">
             <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
@@ -140,6 +177,7 @@ $fotoSesion = SubidaImagen::url($_SESSION['foto'] ?? null);
             Usuarios
         </a>
         <?php endif; ?>
+    <?php endif; // fin del menú del personal ?>
     </nav>
 
     <div class="sidebar-user">
