@@ -14,6 +14,7 @@
 // -----------------------------------------------------------------
 
 require_once __DIR__ . '/../../config/conexion.php';
+require_once __DIR__ . '/../../includes/validacion.php';
 require_once __DIR__ . '/../modelos/Usuario.php';
 
 class ControladorAuth
@@ -66,11 +67,14 @@ class ControladorAuth
      * Registro público de un paciente.
      * Retorna un string de error, o null si fue exitoso (ya redirigió a login).
      */
-    /** Longitud mínima de contraseña (misma regla que restablecer.php). */
-    public const PASS_MIN = 8;
-
-    /** Sexos aceptados: deben coincidir con el ENUM de paciente.sexo. */
-    private const SEXOS = ['F', 'M', 'X', 'prefiero_no_decir'];
+    /**
+     * Longitud mínima de contraseña.
+     *
+     * Se conserva como alias de Validacion::PASS_MIN porque registro.php
+     * ya la lee así para dibujar el texto de ayuda y el validador de
+     * JavaScript. El valor real vive en un solo lugar.
+     */
+    public const PASS_MIN = Validacion::PASS_MIN;
 
     public function registrar(array $datos): ?string
     {
@@ -86,71 +90,22 @@ class ControladorAuth
             return 'Completá todos los campos obligatorios.';
         }
 
-        // ── Contraseña ───────────────────────────────────────────
-        if (strlen($datos['contrasenia']) < self::PASS_MIN) {
-            return 'La contraseña debe tener al menos ' . self::PASS_MIN . ' caracteres.';
-        }
-        if (!preg_match('/[A-Za-z]/', $datos['contrasenia'])) {
-            return 'La contraseña debe incluir al menos una letra.';
-        }
-        if (!preg_match('/\d/', $datos['contrasenia'])) {
-            return 'La contraseña debe incluir al menos un número.';
-        }
-        if ($datos['contrasenia'] !== $datos['contrasenia2']) {
-            return 'Las contraseñas no coinciden.';
-        }
-
-        // ── Nombre de usuario ────────────────────────────────────
-        // Se acota el juego de caracteres para que no puedan colarse
-        // espacios ni símbolos raros que después compliquen el login.
-        if (!preg_match('/^[a-zA-Z0-9._-]{4,40}$/', $datos['usuario'])) {
-            return 'El usuario debe tener entre 4 y 40 caracteres y sólo letras, números, punto, guion o guion bajo.';
-        }
-
-        // ── Documento ────────────────────────────────────────────
-        if (!ctype_digit($datos['dni']) || strlen($datos['dni']) < 7 || strlen($datos['dni']) > 9) {
-            return 'El DNI debe tener entre 7 y 9 dígitos, sin puntos.';
-        }
-
-        // ── Teléfono ─────────────────────────────────────────────
-        // Se permiten separadores de escritura habituales y se valida la
-        // cantidad de dígitos reales.
-        $telDigitos = preg_replace('/\D/', '', $datos['telefono']);
-        if (strlen($telDigitos) < 8 || strlen($telDigitos) > 15) {
-            return 'El teléfono debe tener entre 8 y 15 dígitos.';
-        }
-
-        // ── Email ────────────────────────────────────────────────
-        if (!filter_var($datos['email'], FILTER_VALIDATE_EMAIL)) {
-            return 'El email no tiene un formato válido.';
-        }
-        if (strlen($datos['email']) > 120) {
-            return 'El email es demasiado largo.';
-        }
-
-        // ── Fecha de nacimiento (opcional, pero si viene debe ser real) ──
-        if (!empty($datos['fecha_nac'])) {
-            $f = DateTime::createFromFormat('Y-m-d', $datos['fecha_nac']);
-            if (!$f || $f->format('Y-m-d') !== $datos['fecha_nac']) {
-                return 'La fecha de nacimiento no es válida.';
-            }
-            if ($f > new DateTime('today')) {
-                return 'La fecha de nacimiento no puede ser futura.';
-            }
-            if ((int) $f->format('Y') < 1900) {
-                return 'Revisá la fecha de nacimiento.';
-            }
-        }
-
-        // ── Sexo (opcional; si viene, debe estar en el ENUM) ─────
-        if (!empty($datos['sexo']) && !in_array($datos['sexo'], self::SEXOS, true)) {
-            return 'El sexo seleccionado no es válido.';
-        }
-
-        // ── Dirección (opcional) ─────────────────────────────────
-        if (!empty($datos['direccion']) && mb_strlen($datos['direccion']) > 150) {
-            return 'La dirección es demasiado larga (máximo 150 caracteres).';
-        }
+        // ── Campo por campo ──────────────────────────────────────
+        // Las reglas viven en includes/validacion.php, compartidas con
+        // el perfil y con el restablecimiento de contraseña: son las
+        // mismas tres pantallas pidiendo los mismos datos, y tenerlas
+        // escritas una sola vez es lo que impide que se separen con el
+        // tiempo. Cada método devuelve el mensaje de error o null.
+        if ($err = Validacion::nombre($datos['nombre'], 'El nombre'))       return $err;
+        if ($err = Validacion::nombre($datos['apellido'], 'El apellido'))   return $err;
+        if ($err = Validacion::password($datos['contrasenia'], $datos['contrasenia2'])) return $err;
+        if ($err = Validacion::usuario($datos['usuario']))                  return $err;
+        if ($err = Validacion::dni($datos['dni']))                          return $err;
+        if ($err = Validacion::telefono($datos['telefono']))                return $err;
+        if ($err = Validacion::email($datos['email']))                      return $err;
+        if ($err = Validacion::fechaNac((string) ($datos['fecha_nac'] ?? ''))) return $err;
+        if ($err = Validacion::sexo((string) ($datos['sexo'] ?? '')))       return $err;
+        if ($err = Validacion::direccion((string) ($datos['direccion'] ?? ''))) return $err;
 
         // ── Obra social (opcional) ───────────────────────────────
         // Se comprueba contra la base que el plan exista: el <select> del
@@ -159,9 +114,8 @@ class ControladorAuth
             if (!$this->modelo->existePlan((int) $datos['id_plan'])) {
                 return 'La obra social seleccionada no es válida.';
             }
-            if (!empty($datos['nro_afiliado'])
-                && !preg_match('/^[A-Za-z0-9\/-]{3,50}$/', $datos['nro_afiliado'])) {
-                return 'El número de afiliado sólo admite letras, números, guiones y barras (3 a 50 caracteres).';
+            if ($err = Validacion::nroAfiliado((string) ($datos['nro_afiliado'] ?? ''))) {
+                return $err;
             }
         } else {
             // Sin obra social no puede quedar un número de afiliado colgado.
