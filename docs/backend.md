@@ -16,6 +16,8 @@ SQL**. Reciben el `PDO` por constructor.
 | `Ausencia` | Ausencias con cancelación de turnos |
 | `Consultorio` | ABM de consultorios |
 | `ObraSocial` | Obras sociales, planes y descuentos |
+| `Perfil` | Datos que cada usuario edita de su propia cuenta |
+| `Notificacion` | Centro de avisos: alta, lectura, filtros, borrado |
 
 ### Convenciones
 
@@ -159,6 +161,8 @@ try {
 | `includes/auth.php` | Sesión, roles, permisos, CSRF |
 | `includes/seguridad.php` | Cookies endurecidas, cabeceras, anti fuerza bruta |
 | `includes/validacion.php` | Reglas de campo compartidas (registro, perfil, restablecimiento) |
+| `includes/notificaciones.php` | Qué aviso se manda y por qué canal — ver [notificaciones.md](notificaciones.md) |
+| `includes/email_plantilla.php` | Diseño único de todos los correos |
 | `includes/mailer.php` | Envío de correo con dos implementaciones |
 | `includes/subida_imagen.php` | Subida y procesamiento seguro de imágenes |
 

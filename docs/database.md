@@ -179,6 +179,7 @@ Ejecutar **en este orden** (cada una asume la anterior):
 | 10 | `vistas.sql` | Vistas |
 | 11 | `auth_v2.sql` | Autenticación v2 |
 | 12 | `perfil.sql` | Columnas de contacto editables desde el perfil |
+| 13 | `notificaciones.sql` | Centro de notificaciones |
 
 ## Defectos de esquema corregidos en `auth_v2.sql`
 

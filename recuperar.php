@@ -14,6 +14,7 @@
 require_once __DIR__ . '/config/conexion.php';
 require_once __DIR__ . '/includes/seguridad.php';
 require_once __DIR__ . '/includes/mailer.php';
+require_once __DIR__ . '/includes/email_plantilla.php';
 require_once __DIR__ . '/sistema/modelos/Usuario.php';
 
 iniciarSesionSegura();
@@ -59,37 +60,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($usuario) {
             try {
                 $token  = $modelo->crearTokenReset((int) $usuario['id_usuario'], ipCliente());
-                $enlace = (isset($_SERVER['HTTP_HOST']) ? 'http://' . $_SERVER['HTTP_HOST'] : '')
-                        . BASE_URL . 'restablecer.php?token=' . urlencode($token);
+                $enlace = urlAbsoluta('restablecer.php?token=' . urlencode($token));
 
-                $nombre = e($usuario['nombre']);
-                $cuerpo = <<<HTML
-<div style="font-family:'Segoe UI',system-ui,sans-serif;max-width:520px;margin:0 auto;color:#0f172a">
-  <div style="background:linear-gradient(135deg,#1e3a8a,#2563eb);padding:28px;border-radius:14px 14px 0 0;color:#fff">
-    <h1 style="margin:0;font-size:20px">MediTurnos</h1>
-  </div>
-  <div style="border:1px solid #e2e8f0;border-top:none;border-radius:0 0 14px 14px;padding:28px;background:#fff">
-    <h2 style="margin:0 0 12px;font-size:18px">Hola, {$nombre}</h2>
-    <p style="color:#475569;line-height:1.6;font-size:14px">
-      Recibimos un pedido para restablecer la contraseña de tu cuenta.
-      Hacé clic en el botón para elegir una nueva:
-    </p>
-    <p style="text-align:center;margin:26px 0">
-      <a href="{$enlace}" style="background:#2563eb;color:#fff;text-decoration:none;
-         padding:13px 28px;border-radius:10px;font-weight:600;display:inline-block">
-        Crear una contraseña nueva
-      </a>
-    </p>
-    <p style="color:#64748b;font-size:13px;line-height:1.6">
-      El enlace vence en una hora y sólo puede usarse una vez.<br>
-      Si no pediste esto, ignorá el mensaje: tu contraseña actual sigue funcionando.
-    </p>
-    <p style="color:#94a3b8;font-size:12px;word-break:break-all;border-top:1px solid #e2e8f0;padding-top:14px;margin-top:20px">
-      Si el botón no funciona, copiá y pegá esta dirección:<br>{$enlace}
-    </p>
-  </div>
-</div>
-HTML;
+                // El HTML del correo lo arma includes/email_plantilla.php,
+                // igual que el de todos los demás avisos del sistema. Antes
+                // este archivo tenía su propio diseño escrito a mano: con
+                // trece correos por delante, esa manera garantizaba que cada
+                // uno terminara pareciéndose un poco menos al anterior.
+                $cuerpo = emailPlantilla([
+                    'titulo'    => 'Restablecé tu contraseña',
+                    'preheader' => 'Tenés una hora para elegir una contraseña nueva.',
+                    'saludo'    => 'Hola, ' . $usuario['nombre'],
+                    'parrafos'  => [
+                        'Recibimos un pedido para restablecer la contraseña de tu cuenta '
+                        . 'de MediTurnos. Entrá al enlace y elegí una nueva.',
+                    ],
+                    'boton'     => ['texto' => 'Crear una contraseña nueva', 'url' => $enlace],
+                    'aviso'     => 'El enlace vence en una hora y sólo se puede usar una vez.',
+                    'nota'      => 'Si no pediste esto, ignorá el mensaje: tu contraseña '
+                                 . 'actual sigue funcionando y nadie accedió a tu cuenta.',
+                ]);
 
                 $mailer = obtenerMailer();
                 $mailer->enviar($usuario['email'], 'Restablecé tu contraseña — MediTurnos', $cuerpo);
