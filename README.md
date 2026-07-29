@@ -118,6 +118,7 @@ mysql -u root --default-character-set=utf8mb4 mediturnos < vistas.sql
 mysql -u root --default-character-set=utf8mb4 mediturnos < auth_v2.sql
 mysql -u root --default-character-set=utf8mb4 mediturnos < perfil.sql
 mysql -u root --default-character-set=utf8mb4 mediturnos < notificaciones.sql
+mysql -u root --default-character-set=utf8mb4 mediturnos < reprogramacion.sql
 ```
 
 > El orden importa: cada migración asume la anterior. `perfil.sql` es la última y
@@ -239,6 +240,7 @@ mediturnos/
 ├── logout.php              Cierre de sesión
 ├── dashboard.php           Router por rol
 ├── perfil.php              Mi perfil (foto, datos, cobertura, contraseña)
+├── agendar.php             Reserva de turno del paciente
 │
 ├── config/
 │   ├── conexion.php        Conexión PDO + zona horaria

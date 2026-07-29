@@ -18,6 +18,7 @@
 | Credenciales expuestas | ✅ | `config/mail.php` en `.gitignore` |
 | Contraseñas | ✅ | bcrypt vía `password_hash` |
 | Campos enviados como array | ⚠️ Parcial | Cubierto en el perfil (`ControladorPerfil::texto()`). Los formularios anteriores todavía asumen texto |
+| Manipulación de precio | ✅ | La cobertura del turno se valida contra las del paciente — ver abajo |
 
 ## Consultas preparadas
 
@@ -80,6 +81,28 @@ navegador: los tres los controla quien sube el archivo.
 
 **Verificado:** un archivo `.jpg` que contenía código PHP fue rechazado, y pedir un
 `.php` dentro de esa carpeta devuelve `403`.
+
+## El turno gratis
+
+No todo agujero es técnico. Este era de negocio y el formulario lo servía en
+bandeja: el desplegable de reserva ofrecía **las quince obras sociales del
+sistema** y el controlador tomaba el `id_plan` del POST sin verificar de quién
+era.
+
+El descuento sale de `descuento_os_medico`, y con los datos reales **IOMA tiene
+100 % con una de las médicas**. Cualquier paciente podía elegir esa cobertura y
+sacar un turno gratis: con el monto en cero, `Pago::crearParaTurno()` marca el
+pago como saldado y el turno se confirma solo.
+
+Corregido en dos capas —la lista que se ofrece y la validación al guardar—,
+porque un `<select>` se edita desde las herramientas del navegador.
+
+**Verificado con el ataque real:** el POST con una cobertura ajena es rechazado
+y no crea ningún turno. Detalle completo en [area-paciente.md](area-paciente.md).
+
+> **Lección:** al auditar, mirar también qué opciones ofrece un formulario. Un
+> desplegable con más opciones de las que corresponden es una autorización que
+> nadie escribió.
 
 ## IDOR: el id que nunca sale del servidor
 

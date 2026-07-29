@@ -31,6 +31,7 @@ caiga a Times si Google Fonts no carga.
 | `landing.css` | Sólo la landing (autocontenido) |
 | `auth.css` | Login, registro y recuperación **+ widgets de formulario reutilizables** |
 | `perfil.css` | Sólo "Mi perfil" |
+| `paciente.css` | Área del Paciente: inicio, detalle de turno, reprogramación |
 | `utilidades.css` | Helpers de una sola propiedad, para evitar estilos en línea |
 
 Están separados por **responsabilidad**, no por rendimiento: los tres primeros se

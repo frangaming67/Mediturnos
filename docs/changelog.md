@@ -9,6 +9,16 @@ Versionado según [SemVer](https://semver.org/lang/es/).
 
 ### Agregado
 
+**Panel del paciente** — ver [area-paciente.md](area-paciente.md)
+- Menú propio: Inicio · Agendar cita · Mis turnos · Mis pagos · Mi perfil
+- El inicio pasa a ser el resumen de la cuenta (antes era el calendario de
+  reserva, que se mudó a `agendar.php`)
+- Próxima cita real con estado, aviso de pago pendiente y su vencimiento
+- Ver detalle del turno, con su historial de cambios
+- **Reprogramar**: mover el turno sin perder el pago ni el número
+- Cancelar desde el panel, volviendo al panel
+- Estado vacío que explica qué pasa y ofrece la acción que corresponde
+
 **Notificaciones y correos** — cimientos del Área del Paciente
 - Tabla `notificacion` y centro de avisos por usuario
 - Servicio `Notificador` con canales intercambiables (in-app + correo), con la
@@ -34,6 +44,16 @@ Versionado según [SemVer](https://semver.org/lang/es/).
 
 ### Corregido
 
+- **Turnos gratis.** El formulario de reserva ofrecía las quince obras sociales
+  del sistema y nadie verificaba que la elegida fuera del paciente. Como IOMA
+  tiene 100% de descuento con una de las médicas, cualquiera podía sacar un
+  turno sin pagar: con el monto en cero el pago se da por saldado solo y el
+  turno se confirma. Ahora sólo se ofrecen —y se aceptan— las coberturas
+  propias más el pago particular.
+- **`obtenerSlots()` hacía una consulta por horario.** Una jornada de 8 a 16 con
+  turnos de 20 minutos eran 24 consultas para dibujar una grilla. Ahora es una.
+- **Un turno que cambiaba de fecha no dejaba rastro**: el trigger de historial
+  sólo miraba el estado.
 - **`medico.telefono` era `int`.** Mismo defecto que ya se había corregido en
   `paciente`: un celular de 11 dígitos se aplastaba en 4294967295. Se detectó al
   habilitar la edición del teléfono desde el perfil.
