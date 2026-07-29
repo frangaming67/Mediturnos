@@ -32,9 +32,15 @@ $fechaTexto = ucfirst($dias[(int) date('w', $ts)]) . ' ' . (int) date('j', $ts)
 
 <?php if (!empty($_GET['msg']) || !empty($_GET['err'])): ?>
 <div class="alerta alerta-<?= !empty($_GET['err']) ? 'error' : 'exito' ?>" role="alert">
-    <?= htmlspecialchars(!empty($_GET['err'])
+    <?php
+    $avisos = [
+        'reprogramado' => 'El turno quedó reprogramado.',
+        'calificado'   => '¡Gracias! Tu calificación quedó registrada.',
+    ];
+    echo htmlspecialchars(!empty($_GET['err'])
         ? urldecode($_GET['err'])
-        : ($_GET['msg'] === 'reprogramado' ? 'El turno quedó reprogramado.' : 'Listo.')) ?>
+        : ($avisos[$_GET['msg'] ?? ''] ?? 'Listo.'));
+    ?>
 </div>
 <?php endif; ?>
 
@@ -120,6 +126,70 @@ $fechaTexto = ucfirst($dias[(int) date('w', $ts)]) . ' ' . (int) date('j', $ts)
             </div>
         </div>
     </div>
+
+    <!-- ══════════ Calificación ══════════
+         Sólo aparece cuando tiene sentido: una consulta ya realizada y
+         todavía sin calificar. Mostrar el formulario antes de la
+         consulta invitaría a puntuar algo que no pasó. -->
+    <?php if ($calificacion): ?>
+    <div class="panel">
+        <div class="panel-header"><span class="panel-titulo">Tu calificación</span></div>
+        <div class="panel-body">
+            <div class="cal-dadas" aria-label="<?= (int) $calificacion['puntaje'] ?> de 5 estrellas">
+                <?php for ($i = 1; $i <= 5; $i++): ?>
+                    <span class="<?= $i <= (int) $calificacion['puntaje'] ? 'llena' : '' ?>" aria-hidden="true">★</span>
+                <?php endfor; ?>
+                <span class="cal-dadas-num"><?= (int) $calificacion['puntaje'] ?>/5</span>
+            </div>
+            <?php if (!empty($calificacion['comentario'])): ?>
+            <p class="cal-comentario"><?= htmlspecialchars($calificacion['comentario']) ?></p>
+            <?php endif; ?>
+            <p class="form-hint" style="margin-top:10px">
+                Calificaste el <?= htmlspecialchars(date('d/m/Y', strtotime($calificacion['creada_en']))) ?>.
+                No se puede modificar.
+            </p>
+        </div>
+    </div>
+
+    <?php elseif ($esPaciente && $motivoNoCalif === null): ?>
+    <div class="panel">
+        <div class="panel-header"><span class="panel-titulo">¿Cómo estuvo la consulta?</span></div>
+        <div class="panel-body">
+            <form method="POST" action="<?= BASE_URL ?>sistema/controladores/ControladorTurno.php?accion=calificar">
+                <?php csrf_field(); ?>
+                <input type="hidden" name="id_turno" value="<?= (int) $turno['id_turno'] ?>">
+
+                <?php // Radios de verdad, no <div>s con onclick: se operan con el
+                      // teclado, las lee un lector de pantalla y el formulario se
+                      // puede enviar sin JavaScript. ?>
+                <fieldset class="cal-estrellas">
+                    <legend class="solo-lectores">Puntaje</legend>
+                    <?php foreach ([5 => 'Excelente', 4 => 'Muy buena', 3 => 'Buena',
+                                    2 => 'Regular', 1 => 'Mala'] as $n => $rotulo): ?>
+                    <label title="<?= $rotulo ?>">
+                        <input type="radio" name="puntaje" value="<?= $n ?>" required>
+                        <span aria-hidden="true">★</span>
+                        <span class="solo-lectores"><?= $n ?> — <?= $rotulo ?></span>
+                    </label>
+                    <?php endforeach; ?>
+                </fieldset>
+
+                <div class="form-group" style="margin-top:14px">
+                    <label for="comentario">Comentario <span class="form-hint">(opcional)</span></label>
+                    <textarea name="comentario" id="comentario" class="form-control" rows="3"
+                              maxlength="400" placeholder="Contanos cómo te atendieron"></textarea>
+                </div>
+
+                <div class="form-acciones">
+                    <button type="submit" class="btn btn-primario">Enviar calificación</button>
+                </div>
+                <p class="form-hint" style="margin-top:10px">
+                    Se publica con tu inicial y apellido. Se puede enviar una sola vez.
+                </p>
+            </form>
+        </div>
+    </div>
+    <?php endif; ?>
 
     <!-- ══════════ Qué le fue pasando ══════════ -->
     <div class="panel">

@@ -62,6 +62,62 @@ class Medico
     }
 
     /**
+     * Profesionales que atienden una especialidad, con todo lo que el
+     * paciente necesita para elegir: foto, matrícula, calificación,
+     * consultorios y días de atención.
+     *
+     * ── LA FOTO SALE DE `usuario`, NO DE `medico` ────────────
+     * No se agregó una columna `medico.foto`: el profesional ya sube su
+     * foto desde su perfil y queda en `usuario.foto`. Es la misma
+     * persona y la misma imagen; duplicarla obligaría a mantener dos
+     * copias sincronizadas y a decidir cuál gana cuando difieran. Un
+     * médico sin cuenta simplemente no tiene foto y se muestran sus
+     * iniciales.
+     *
+     * ── POR QUÉ LA CALIFICACIÓN VA EN SUBCONSULTA ────────────
+     * Es la trampa clásica de este tipo de listado. Si `calificacion` se
+     * uniera con JOIN al mismo tiempo que `horario_atencion`, cada
+     * calificación aparecería repetida una vez por cada franja horaria
+     * del médico, y el AVG() saldría calculado sobre esas filas
+     * multiplicadas. El promedio no daría mal por poco: daría cualquier
+     * cosa, y encima parecería creíble. En subconsulta, cada número se
+     * calcula sobre su propia tabla.
+     *
+     * ── EL JOIN CON HORARIOS ES INTERNO A PROPÓSITO ──────────
+     * Un médico puede tener la especialidad cargada pero ningún horario
+     * de atención para ella. Ofrecerlo llevaría al paciente a un
+     * calendario vacío después de dos clics. Si no tiene agenda, no
+     * aparece.
+     */
+    public function listarParaReserva(int $idEspecialidad): array
+    {
+        $stmt = $this->pdo->prepare(
+            "SELECT m.matricula, m.nombre, m.apellido, u.foto,
+                    (SELECT ROUND(AVG(c.puntaje), 1) FROM calificacion c
+                      WHERE c.matricula = m.matricula)            AS calificacion,
+                    (SELECT COUNT(*) FROM calificacion c
+                      WHERE c.matricula = m.matricula)            AS votos,
+                    GROUP_CONCAT(DISTINCT CONCAT('Cons. ', co.numero, ' - Piso ', co.piso)
+                                 ORDER BY co.numero SEPARATOR ' · ') AS consultorios,
+                    GROUP_CONCAT(DISTINCT h.dia_semana)              AS dias
+             FROM   medico m
+             JOIN   medico_especialidad me
+                    ON me.matricula = m.matricula AND me.id_especialidad = :esp
+             JOIN   horario_atencion h
+                    ON h.matricula = m.matricula AND h.id_especialidad = :esp2
+             JOIN   consultorio co ON co.id_consultorio = h.id_consultorio
+             LEFT   JOIN usuario u ON u.matricula = m.matricula
+             WHERE  m.estado = 'activo'
+             GROUP  BY m.matricula, m.nombre, m.apellido, u.foto
+             ORDER  BY calificacion DESC, m.apellido, m.nombre"
+        );
+        // Dos marcadores con el mismo valor: con EMULATE_PREPARES en
+        // false no se puede repetir uno.
+        $stmt->execute([':esp' => $idEspecialidad, ':esp2' => $idEspecialidad]);
+        return $stmt->fetchAll();
+    }
+
+    /**
      * Trae un médico con su lista de id_especialidad.
      */
     public function buscarPorMatricula(int $matricula): array|false

@@ -23,6 +23,7 @@ require_once __DIR__ . '/../../includes/auth.php';
 require_once __DIR__ . '/../../includes/notificaciones.php';
 require_once __DIR__ . '/../modelos/Turno.php';
 require_once __DIR__ . '/../modelos/Pago.php';
+require_once __DIR__ . '/../modelos/Calificacion.php';
 
 // verificarRol() NO se llama acá arriba (a diferencia de los otros
 // controladores) porque 'index' lo puede ver cualquier rol logueado
@@ -211,6 +212,16 @@ switch ($accion) {
             exit;
         }
 
+        // ── Términos aceptados ───────────────────────────────────
+        // El checkbox se valida también acá y no sólo en el navegador:
+        // sin esto, "aceptar los términos" sería una casilla decorativa
+        // que cualquiera puede saltear armando el POST a mano.
+        if ($_SESSION['rol'] === 'paciente' && empty($_POST['acepto'])) {
+            header('Location: ' . BASE_URL . 'agendar.php?err='
+                . urlencode('Tenés que aceptar los términos para reservar.'));
+            exit;
+        }
+
         // ── Guard de negocio: la cobertura tiene que ser SUYA ────
         // El desplegable ya sólo ofrece las del paciente, pero el <select>
         // se edita desde las herramientas del navegador y el POST se arma
@@ -263,7 +274,15 @@ switch ($accion) {
             // donde elige pagar ahora (tarjeta) o más tarde.
             try {
                 $idPago = (new Pago($pdo))->crearParaTurno($idTurno, $datos);
-                header('Location: ' . BASE_URL . 'sistema/controladores/ControladorPago.php?accion=elegir&id_pago=' . $idPago);
+
+                // Se respeta lo que la persona eligió en el resumen. Si
+                // dijo "ahora con tarjeta", va derecho al formulario de
+                // pago: mandarla a una pantalla intermedia a volver a
+                // elegir lo que ya eligió es una fricción sin motivo.
+                $accionPago = ($_POST['pago'] ?? '') === 'tarjeta' ? 'tarjeta' : 'elegir';
+
+                header('Location: ' . BASE_URL . 'sistema/controladores/ControladorPago.php'
+                    . '?accion=' . $accionPago . '&id_pago=' . $idPago);
                 exit;
             } catch (PDOException $ep) {
                 // El turno quedó reservado pero el pago no se pudo crear.
@@ -404,8 +423,52 @@ switch ($accion) {
         $turno     = turnoPropio($modelo, (int) ($_GET['id'] ?? 0));
         $historial = $modelo->obtenerHistorial((int) $turno['id_turno']);
         $motivoNoMover = $modelo->motivoNoReprogramable($turno);
+
+        // Datos de calificación: la que ya dejó, o si puede dejarla.
+        $modeloCalif   = new Calificacion($pdo);
+        $calificacion  = $modeloCalif->deTurno((int) $turno['id_turno']);
+        $motivoNoCalif = $_SESSION['rol'] === 'paciente'
+            ? $modeloCalif->motivoNoCalificable($turno, (int) ($_SESSION['id_paciente'] ?? 0))
+            : 'Sólo el paciente puede calificar la consulta.';
+
         require __DIR__ . '/../vistas/turnos/detalle.php';
         break;
+
+    // ── Calificar una consulta ya realizada ──────────────────
+    case 'calificar':
+        verificarRol(['paciente']);
+        csrf_verificar();
+
+        $turno = turnoPropio($modelo, (int) ($_POST['id_turno'] ?? 0));
+        $URLC  = BASE_URL . 'sistema/controladores/ControladorTurno.php?accion=detalle&id='
+               . (int) $turno['id_turno'];
+
+        $modeloCalif = new Calificacion($pdo);
+        $motivo = $modeloCalif->motivoNoCalificable($turno, (int) ($_SESSION['id_paciente'] ?? 0));
+        if ($motivo !== null) {
+            header('Location: ' . $URLC . '&err=' . urlencode($motivo));
+            exit;
+        }
+
+        try {
+            $modeloCalif->crear(
+                (int) $turno['id_turno'],
+                (int) $turno['matricula'],
+                (int) $turno['id_paciente'],
+                (int) ($_POST['puntaje'] ?? 0),
+                is_string($_POST['comentario'] ?? null) ? $_POST['comentario'] : null
+            );
+        } catch (RuntimeException $e) {
+            header('Location: ' . $URLC . '&err=' . urlencode($e->getMessage()));
+            exit;
+        } catch (PDOException $e) {
+            error_log('ControladorTurno calificar: ' . $e->getMessage());
+            header('Location: ' . $URLC . '&err=' . urlencode('No se pudo guardar tu calificación.'));
+            exit;
+        }
+
+        header('Location: ' . $URLC . '&msg=calificado');
+        exit;
 
     // ── Reprogramar: elegir el horario nuevo ─────────────────
     case 'reprogramar':

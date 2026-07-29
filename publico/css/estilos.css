@@ -47,6 +47,14 @@
     --gris-osc:       #0f172a;
     --gris-med:       #334155;
     --gris:           #64748b;   /* 4.7:1 sobre blanco → cumple WCAG AA */
+    /* --gris2 estaba definida SÓLO en landing.css, que no se carga fuera
+       de la portada. auth.css la usaba seis veces —el color de los iconos
+       y los placeholders del login y el registro—, así que esas seis
+       reglas eran inválidas y el color caía al heredado. Un token que
+       falta no rompe la página: la deja distinta y nadie se entera.
+       landing.css conserva su copia porque es autocontenida a propósito
+       (la portada no carga esta hoja). */
+    --gris2:          #94a3b8;
     --gris-claro:     #f8fafc;
     --borde:          #e2e8f0;
     --blanco:         #ffffff;
@@ -169,6 +177,20 @@ a:hover { text-decoration: underline; }
 .sidebar-user .user-rol    { font-size: .72rem; color: rgba(255,255,255,.45); text-transform: capitalize; }
 .sidebar-user .btn-logout  { padding: 5px; color: rgba(255,255,255,.45); background: none; border: none; cursor: pointer; border-radius: 4px; transition: color .15s, background .15s; }
 .sidebar-user .btn-logout:hover { color: var(--blanco); background: rgba(255,255,255,.1); }
+
+/* ── Sólo para lectores de pantalla ─────────────────────────────
+   Texto que no se ve pero que sí se lee en voz alta. Se usa para dar
+   contexto a controles que visualmente se entienden por su forma (una
+   estrella, una lupa) pero que sin texto no le dicen nada a quien
+   navega con un lector de pantalla.
+
+   Vive acá y no en auth.css ni en paciente.css porque la necesitan los
+   dos mundos —las pantallas públicas y las del sistema—, y estilos.css
+   es la única hoja que ambos cargan. */
+.solo-lectores {
+    position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+    overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
 
 /* ── Área principal ─────────────────────────────────────────────── */
 .main-wrap {

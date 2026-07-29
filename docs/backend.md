@@ -18,6 +18,7 @@ SQL**. Reciben el `PDO` por constructor.
 | `ObraSocial` | Obras sociales, planes y descuentos |
 | `Perfil` | Datos que cada usuario edita de su propia cuenta |
 | `Notificacion` | Centro de avisos: alta, lectura, filtros, borrado |
+| `Calificacion` | Puntaje y comentario de una consulta ya realizada |
 
 ### Convenciones
 

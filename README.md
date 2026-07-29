@@ -119,6 +119,7 @@ mysql -u root --default-character-set=utf8mb4 mediturnos < auth_v2.sql
 mysql -u root --default-character-set=utf8mb4 mediturnos < perfil.sql
 mysql -u root --default-character-set=utf8mb4 mediturnos < notificaciones.sql
 mysql -u root --default-character-set=utf8mb4 mediturnos < reprogramacion.sql
+mysql -u root --default-character-set=utf8mb4 mediturnos < calificaciones.sql
 ```
 
 > El orden importa: cada migración asume la anterior. `perfil.sql` es la última y

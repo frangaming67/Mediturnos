@@ -106,6 +106,114 @@ que tiene cargada).
 **Verificado con el ataque real:** un POST con el plan de IOMA desde una cuenta
 que no lo tiene es rechazado y no crea ningún turno.
 
+## Agendar en cuatro pasos
+
+```
+Especialidad → Profesional → Día → Horario → Confirmación
+   ?esp=2        &mat=10002    &fecha=…      &hora=…&cons=…
+```
+
+### Por qué cada paso es una URL y no un asistente de JavaScript
+
+Podría resolverse escondiendo y mostrando `<div>`s, como hace el registro. Acá no
+conviene, por tres motivos concretos:
+
+1. **Cada paso tiene su propia dirección.** El botón "atrás" del navegador hace
+   lo que la persona espera, y un enlace a un profesional se puede compartir.
+2. **Los datos de cada paso dependen del anterior.** Los médicos salen de la
+   especialidad, los días del médico, los horarios del día. Un asistente de JS
+   tendría que traerlo todo por adelantado —los horarios de los seis médicos para
+   el próximo mes— o pedirlo por AJAX igual. La navegación no ahorra nada.
+3. **Funciona sin JavaScript.** Cada paso es un enlace o un formulario.
+
+### Validación en cascada
+
+Ningún paso confía en el anterior: los parámetros vienen de la URL y se pueden
+escribir a mano. En cada carga se vuelve a comprobar que la especialidad exista,
+que el médico la atienda, que el día tenga agenda y que **el horario siga libre**.
+
+Si algo no cierra, se desarma desde ahí en adelante y la persona vuelve al paso
+que corresponde — nunca a una pantalla rota.
+
+**Verificado:** `?esp=99999` vuelve al paso 1; un médico que no atiende esa
+especialidad, al paso 2; una fecha pasada, al calendario.
+
+### "Alguien lo reservó mientras yo elegía"
+
+Es el caso que pidió cubrirse explícitamente. Pasa en el paso 5: entre que se
+dibuja el resumen y se aprieta confirmar pueden pasar minutos.
+
+El horario se revalida contra `obtenerSlots()` **en cada carga** del resumen, así
+que quien tenía la pantalla abierta ve el aviso antes de confirmar y vuelve a
+elegir. Y si aun así llegara a enviarse, el índice único del motor rechaza el
+`INSERT`: hay dos redes, no una.
+
+**Verificado:** con el horario tomado por otro paciente entre dos cargas, el
+resumen avisa y no deja confirmar.
+
+### Lo que muestra cada paso
+
+| Paso | Datos |
+|---|---|
+| 1 · Especialidad | Precio desde, duración del turno, cuántos profesionales |
+| 2 · Profesional | Foto, nombre, especialidad, **matrícula**, consultorios, calificación |
+| 3 · Día | Calendario de 4 semanas con la cantidad de horarios libres por día |
+| 4 · Horario | Sólo los libres en ese momento |
+| 5 · Confirmación | Todo lo anterior + duración, precio de lista, cobertura, **monto final**, método de pago y aceptación de términos |
+
+El calendario del paso 3 no llama a `obtenerSlots()` día por día —serían 30
+llamadas—: resuelve las cuatro semanas con **tres consultas** (horarios del
+médico, ausencias del período, turnos ya tomados por fecha) y las compara en
+memoria. El único día que se calcula exacto es **hoy**, porque las horas que ya
+pasaron reducen la disponibilidad y el conteo por día de la semana no las
+contempla.
+
+### Los términos no son decorativos
+
+La casilla de aceptación se valida **también en el servidor**. Sin eso sería una
+casilla decorativa que cualquiera saltea armando el POST a mano.
+
+## Calificaciones
+
+Lo que hace creíble a una calificación no es el promedio: es **quién puede
+dejarla**. Sólo alguien que tuvo un turno `Realizado` con ese médico, y una sola
+vez por turno.
+
+Las dos condiciones están en el **esquema**, no sólo en PHP: `calificacion.id_turno`
+es `UNIQUE` y no hay calificación sin turno. Si vivieran sólo en el código,
+dependerían de que todo camino futuro se acuerde de comprobarlas.
+
+El puntaje además tiene un `CHECK (puntaje BETWEEN 1 AND 5)` que **MariaDB 10.4
+hace cumplir de verdad**: un 9 no entra ni escribiendo el `INSERT` a mano.
+
+**Verificado:** puntaje 9 rechazado por el motor, segunda calificación del mismo
+turno rechazada por el índice, y un turno ajeno devuelve `403`.
+
+> Sin calificaciones **no se muestra un 0** ni "0 estrellas": sería castigar a
+> quien todavía nadie calificó. Dice "Sin calificaciones aún".
+
+### La trampa del promedio inflado
+
+Es el error clásico de este tipo de listado, y estuvo a punto de entrar:
+
+```sql
+-- MAL: cada calificación se repite una vez por franja horaria del médico
+FROM medico m
+LEFT JOIN calificacion c     ON c.matricula = m.matricula
+LEFT JOIN horario_atencion h ON h.matricula = m.matricula
+...  AVG(c.puntaje)
+```
+
+Un médico con 3 franjas horarias y 1 calificación de 5 mostraría **3 opiniones**,
+y con puntajes distintos el promedio saldría calculado sobre filas multiplicadas.
+No daría mal por poco: daría cualquier cosa, y encima parecería creíble.
+
+La corrección es calcular cada número en una **subconsulta** sobre su propia
+tabla.
+
+**Verificado con el caso exacto:** un médico con 3 franjas y 1 calificación
+muestra "5,0 · 1 opinión".
+
 ## Reprogramar
 
 Mover un turno **no** es cancelarlo y volver a reservarlo. Eso perdería el pago
@@ -177,6 +285,49 @@ consultas menos**.
 
 **Verificado:** tras reservar un horario, desaparece de la grilla y los demás
 siguen ofreciéndose.
+
+## `require` comparte el ámbito: la variable que mató una pantalla
+
+`navbar.php` se incluye con `require`, así que **todo lo que declara pisa lo que
+la vista haya definido antes con el mismo nombre**. El archivo ya lo tenía
+resuelto para `$usuario` —lo llamó `$usuarioSesion` justamente por esto— pero
+faltaba `$iniciales`, y la trampa se cobró una:
+
+```php
+// agendar.php — una función para dibujar el avatar de cada médico
+$iniciales = fn(array $m) => strtoupper(mb_substr($m['nombre'], 0, 1) . …);
+
+require 'navbar.php';   // ← acá dentro: $iniciales = "DP";  (un string)
+
+$iniciales($m);         // Fatal error: Call to undefined function DP()
+```
+
+`DP` eran, literalmente, las iniciales del usuario que estaba mirando la página.
+El error cambia según quién esté logueado, que es de las formas más confusas en
+que puede romperse algo.
+
+Se renombró a `$inicialesSesion`, siguiendo la convención que el propio archivo
+ya usaba. De paso quedó bien `perfil.php`, que definía su `$iniciales` antes del
+navbar y funcionaba **por casualidad**: el navbar se lo pisaba con el valor del
+mismo usuario.
+
+> **Lección:** en un layout incluido con `require`, toda variable propia necesita
+> un nombre que grite que es del layout. El ámbito compartido es una comodidad
+> del patrón, pero convierte cualquier nombre genérico en una mina.
+
+## Un token de color que no existía
+
+`--gris2` estaba definida **sólo en `landing.css`**, que no se carga fuera de la
+portada. `auth.css` la usaba seis veces —el color de los iconos y los
+placeholders del login y el registro— así que esas seis reglas eran inválidas y
+el color caía al heredado.
+
+Un token que falta no rompe la página: la deja **distinta**, y nadie se entera.
+Se movió a `estilos.css`, que es la hoja que cargan todos. `landing.css` conserva
+su copia porque es autocontenida a propósito.
+
+Lo mismo con `.solo-lectores`, que vivía en `auth.css` y hacía falta en las
+pantallas del sistema.
 
 ## Notificaciones que dispara esta etapa
 

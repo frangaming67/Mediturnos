@@ -187,6 +187,7 @@ Ejecutar **en este orden** (cada una asume la anterior):
 | 12 | `perfil.sql` | Columnas de contacto editables desde el perfil |
 | 13 | `notificaciones.sql` | Centro de notificaciones |
 | 14 | `reprogramacion.sql` | El trigger también registra el cambio de horario |
+| 15 | `calificaciones.sql` | Calificación de profesionales |
 
 ## Defectos de esquema corregidos en `auth_v2.sql`
 
