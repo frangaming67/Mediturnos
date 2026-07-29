@@ -333,6 +333,230 @@ public function reservar(array $datos): int
     }
 
 
+    // =============================================================
+    // ÁREA DEL PACIENTE
+    // =============================================================
+
+    /**
+     * Los próximos turnos de un paciente, del más cercano al más lejano.
+     *
+     * "Próximo" es lo que todavía no ocurrió Y sigue vigente: se excluyen
+     * los cancelados y los ya realizados. Sin ese filtro, el panel podría
+     * anunciarle al paciente como "tu próxima cita" un turno que él mismo
+     * canceló.
+     *
+     * La comparación combina fecha y hora en un solo TIMESTAMP: comparar
+     * sólo por fecha dejaría entrar los turnos de HOY que ya pasaron.
+     */
+    public function proximosDePaciente(int $idPaciente, int $limite = 5): array
+    {
+        $limite = max(1, min(20, $limite));   // acotado: va interpolado
+
+        $stmt = $this->pdo->prepare(
+            "SELECT * FROM v_turnos_detalle
+             WHERE id_paciente = :p
+               AND estado NOT IN ('Cancelado', 'Realizado', 'Ausente')
+               AND TIMESTAMP(fecha, hora_inicio) >= NOW()
+             ORDER BY fecha ASC, hora_inicio ASC
+             LIMIT {$limite}"
+        );
+        $stmt->execute([':p' => $idPaciente]);
+        return $stmt->fetchAll();
+    }
+
+    /** Nombre, duración y precio de una especialidad. */
+    public function datosEspecialidad(int $idEspecialidad): array|false
+    {
+        $stmt = $this->pdo->prepare(
+            "SELECT id_especialidad, nombre, duracion_turno_min, precio_consulta
+             FROM especialidad WHERE id_especialidad = :id"
+        );
+        $stmt->execute([':id' => $idEspecialidad]);
+        return $stmt->fetch();
+    }
+
+    /**
+     * Un turno con TODO resuelto (médico, especialidad, consultorio, obra
+     * social, pago), vía la vista v_turnos_detalle.
+     *
+     * Es distinto de buscarPorId(), que devuelve la fila cruda de `turno`
+     * con dos nombres pegados: ese sirve para operar (cancelar, mover),
+     * este para MOSTRAR. Reusar el primero en la pantalla de detalle
+     * obligaría a la vista a hacer cinco consultas más por su cuenta.
+     */
+    public function detalleDeTurno(int $idTurno): array|false
+    {
+        $stmt = $this->pdo->prepare("SELECT * FROM v_turnos_detalle WHERE id_turno = :id");
+        $stmt->execute([':id' => $idTurno]);
+        return $stmt->fetch();
+    }
+
+    /**
+     * Contadores del panel del paciente, en UNA sola consulta.
+     *
+     * Se resuelve con SUM(CASE...) en vez de cinco COUNT(*) separados
+     * porque son cinco números sobre las mismas filas: una consulta que
+     * recorre la tabla una vez es preferible a cinco que la recorren
+     * cinco veces para responder lo mismo.
+     */
+    public function resumenPaciente(int $idPaciente): array
+    {
+        $stmt = $this->pdo->prepare(
+            "SELECT
+                COUNT(*) AS total,
+                SUM(CASE WHEN estado NOT IN ('Cancelado','Realizado','Ausente')
+                          AND TIMESTAMP(fecha, hora_inicio) >= NOW()
+                     THEN 1 ELSE 0 END)                        AS proximos,
+                SUM(CASE WHEN estado = 'Realizado' THEN 1 ELSE 0 END)  AS realizados,
+                SUM(CASE WHEN estado = 'Cancelado' THEN 1 ELSE 0 END)  AS cancelados,
+                SUM(CASE WHEN estado_pago = 'Pendiente' THEN 1 ELSE 0 END) AS pagos_pendientes
+             FROM v_turnos_detalle
+             WHERE id_paciente = :p"
+        );
+        $stmt->execute([':p' => $idPaciente]);
+        $r = $stmt->fetch() ?: [];
+
+        // COUNT sobre cero filas devuelve NULL en las sumas: se normaliza
+        // para que la vista no tenga que preguntar por null en cada dato.
+        foreach (['total','proximos','realizados','cancelados','pagos_pendientes'] as $k) {
+            $r[$k] = (int) ($r[$k] ?? 0);
+        }
+        return $r;
+    }
+
+    /**
+     * Coberturas con las que ESTE paciente puede sacar un turno.
+     *
+     * ── POR QUÉ EXISTE ESTE MÉTODO ───────────────────────────
+     * Antes, el formulario de reserva ofrecía los QUINCE planes del
+     * sistema y nadie verificaba que el elegido fuera del paciente. El
+     * descuento sale de `descuento_os_medico`, así que cualquiera podía
+     * elegir la obra social con mejor convenio y pagar menos.
+     *
+     * Con los datos reales el agujero era total: IOMA tiene 100% de
+     * descuento con la Dra. González. Al quedar el monto en cero,
+     * Pago::crearParaTurno() da el pago por saldado automáticamente y el
+     * turno se confirma solo. Es decir: turno gratis, sin tocar una línea
+     * de HTML, sólo eligiendo del desplegable que el sistema ofrecía.
+     *
+     * Ahora se ofrece únicamente lo que la persona tiene cargado, más la
+     * opción de pagar de su bolsillo.
+     *
+     * El plan particular se identifica por el nombre de la obra social
+     * ('Particular'): es la convención con la que están cargados los
+     * datos. Si esa obra social no existiera, un paciente sin cobertura
+     * no puede reservar — y el formulario se lo dice, en vez de dejarlo
+     * elegir la de otro.
+     */
+    public function planesDePaciente(int $idPaciente): array
+    {
+        $stmt = $this->pdo->prepare(
+            "SELECT pl.id_plan,
+                    CONCAT(os.nombre, ' - ', pl.nombre_plan) AS nombre,
+                    pl.porcentaje_cobertura,
+                    os.nombre AS obra_social,
+                    CASE WHEN pp.id_paciente IS NULL THEN 0 ELSE 1 END AS es_propio
+             FROM   plan_os pl
+             JOIN   obra_social os ON os.id_obra_social = pl.id_obra_social
+             LEFT   JOIN paciente_plan pp
+                    ON pp.id_plan = pl.id_plan AND pp.id_paciente = :p
+             WHERE  pp.id_paciente IS NOT NULL
+                OR  LOWER(os.nombre) = 'particular'
+             ORDER  BY es_propio DESC, os.nombre, pl.nombre_plan"
+        );
+        $stmt->execute([':p' => $idPaciente]);
+        return $stmt->fetchAll();
+    }
+
+    /**
+     * ¿Este paciente puede usar este plan?
+     *
+     * Se comprueba en el SERVIDOR al reservar, no sólo al dibujar el
+     * desplegable: el `<select>` se edita desde las herramientas del
+     * navegador y el POST se arma a mano.
+     */
+    public function planPermitido(int $idPaciente, int $idPlan): bool
+    {
+        foreach ($this->planesDePaciente($idPaciente) as $pl) {
+            if ((int) $pl['id_plan'] === $idPlan) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /** Horas mínimas de antelación para poder mover o cancelar un turno. */
+    public const HORAS_ANTELACION = 2;
+
+    /**
+     * ¿Se puede reprogramar este turno? Devuelve el MOTIVO por el que no,
+     * o null si sí se puede.
+     *
+     * Devuelve el motivo en vez de un booleano a propósito: la pantalla
+     * necesita explicarle a la persona por qué el botón no está, y un
+     * `false` pelado obligaría a repetir estas mismas condiciones en la
+     * vista para adivinar cuál se incumplió.
+     */
+    public function motivoNoReprogramable(array $turno): ?string
+    {
+        $estado = $turno['estado'] ?? '';
+
+        if (in_array($estado, ['Cancelado', 'Realizado', 'Ausente'], true)) {
+            return 'Este turno ya está ' . mb_strtolower($estado) . '.';
+        }
+
+        $inicio = strtotime($turno['fecha'] . ' ' . $turno['hora_inicio']);
+        if ($inicio <= time()) {
+            return 'Este turno ya pasó.';
+        }
+        if ($inicio - time() < self::HORAS_ANTELACION * 3600) {
+            return 'Faltan menos de ' . self::HORAS_ANTELACION . ' horas: '
+                 . 'para cambiarlo tenés que llamar a la clínica.';
+        }
+        return null;
+    }
+
+    /**
+     * Mueve un turno a otro día u horario.
+     *
+     * NO se cancela y se vuelve a reservar: eso perdería el pago ya
+     * hecho, generaría un turno nuevo con otro número y dejaría al
+     * paciente sin su comprobante. Se actualiza el mismo turno.
+     *
+     * La garantía contra la doble reserva es la MISMA de siempre y no
+     * hace falta programarla: `slot_unico` y `slot_consultorio` son
+     * columnas generadas a partir de fecha y hora, así que al moverlas se
+     * recalculan y el índice único rechaza el UPDATE si ese horario ya
+     * está tomado. El motor protege el reprograma igual que la reserva.
+     */
+    public function reprogramar(int $idTurno, string $fecha, string $hora,
+                                int $idConsultorio, string $observacion = ''): void
+    {
+        try {
+            $stmt = $this->pdo->prepare(
+                "UPDATE turno
+                 SET fecha = :fecha, hora_inicio = :hora,
+                     id_consultorio = :cons, observacion = :obs
+                 WHERE id_turno = :id"
+            );
+            $stmt->execute([
+                ':fecha' => $fecha,
+                ':hora'  => $hora,
+                ':cons'  => $idConsultorio,
+                ':obs'   => $observacion !== '' ? $observacion : null,
+                ':id'    => $idTurno,
+            ]);
+        } catch (PDOException $e) {
+            // 23000/1062 = índice único: alguien tomó ese horario primero.
+            if ($e->getCode() === '23000') {
+                throw new RuntimeException(
+                    'Ese horario acaba de ser tomado por otra persona. Elegí otro.'
+                );
+            }
+            throw $e;
+        }
+    }
+
     /**
      * Actualiza el estado de un turno directamente (sin SP, para
      * estados intermedios como Confirmado / Realizado / Ausente).
@@ -454,6 +678,31 @@ public function reservar(array $datos): int
         $stmt->execute([':m' => $matricula, ':dia' => $dia]);
         $horarios = $stmt->fetchAll();
 
+        // Qué está ocupado ese día, en UNA sola consulta.
+        //
+        // Antes se preguntaba a la base slot por slot: una jornada de 8 a 16
+        // con turnos de 20 minutos son 24 consultas para dibujar una grilla,
+        // y el calendario del paciente la pide cada vez que toca un día. Un
+        // día completo de turnos son pocas decenas de filas: traerlas juntas
+        // y comparar en PHP da el mismo resultado con una sola ida a la base.
+        $st = $this->pdo->prepare(
+            "SELECT hora_inicio, matricula, id_consultorio
+             FROM   turno
+             WHERE  fecha = :f
+               AND  id_estado <> (SELECT id_estado FROM estado_turno WHERE descripcion = 'Cancelado')"
+        );
+        $st->execute([':f' => $fecha]);
+
+        // Dos índices en memoria: por médico y por consultorio. Un slot está
+        // tomado si cae en cualquiera de los dos —un profesional no puede
+        // atender a dos personas a la vez, y un consultorio tampoco—.
+        $ocupadoMedico = [];
+        $ocupadoCons   = [];
+        foreach ($st->fetchAll() as $o) {
+            $ocupadoMedico[$o['matricula'] . '|' . $o['hora_inicio']]      = true;
+            $ocupadoCons[$o['id_consultorio'] . '|' . $o['hora_inicio']]   = true;
+        }
+
         $ahora = time();
         $slots = [];
         foreach ($horarios as $h) {
@@ -472,32 +721,19 @@ public function reservar(array $datos): int
                     continue;
                 }
 
-                // Un slot NO está disponible si, a esa fecha/hora y con un
-                // turno activo (no cancelado), ya está ocupado el MÉDICO o el
-                // CONSULTORIO físico (un consultorio atiende un paciente a la vez).
-                $chk = $this->pdo->prepare(
-                    "SELECT COUNT(*) FROM turno
-                     WHERE  fecha = :f AND hora_inicio = :h
-                       AND  id_estado <> (SELECT id_estado FROM estado_turno WHERE descripcion = 'Cancelado')
-                       AND  (matricula = :m OR id_consultorio = :c)"
-                );
-                $chk->execute([
-                    ':m' => $matricula,
-                    ':f' => $fecha,
-                    ':h' => $hora,
-                    ':c' => $h['id_consultorio'],
-                ]);
-
-                if ((int)$chk->fetchColumn() === 0) {
-                    $slots[] = [
-                        'hora' => substr($hora, 0, 5),
-                        'hora_full' => $hora,
-                        'id_consultorio'  => $h['id_consultorio'],
-                        'id_especialidad' => $h['id_especialidad'],
-                        'especialidad' => $h['especialidad'],
-                        'consultorio' => $h['consultorio'],
-                    ];
+                if (isset($ocupadoMedico[$matricula . '|' . $hora])
+                    || isset($ocupadoCons[$h['id_consultorio'] . '|' . $hora])) {
+                    continue;
                 }
+
+                $slots[] = [
+                    'hora' => substr($hora, 0, 5),
+                    'hora_full' => $hora,
+                    'id_consultorio'  => $h['id_consultorio'],
+                    'id_especialidad' => $h['id_especialidad'],
+                    'especialidad' => $h['especialidad'],
+                    'consultorio' => $h['consultorio'],
+                ];
             }
         }
         return $slots;

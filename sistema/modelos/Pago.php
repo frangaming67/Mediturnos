@@ -329,6 +329,35 @@ class Pago
         return $stmt->rowCount() > 0;
     }
 
+    /**
+     * Recalcula el vencimiento del pago pendiente cuando el turno se mueve.
+     *
+     * El plazo nunca puede terminar después del inicio del turno: si no,
+     * alguien podría presentarse a la consulta sin haber pagado y con el
+     * plazo todavía corriendo. Al reprogramar hacia adelante el plazo se
+     * puede estirar (hasta el tope de HORAS_PLAZO); al moverlo hacia un
+     * horario más cercano, se acorta.
+     *
+     * Sólo toca pagos Pendientes: uno ya Pagado no tiene vencimiento que
+     * ajustar, y uno Vencido o Anulado no debe revivir.
+     */
+    public function reajustarVencimiento(int $idTurno, string $inicioTurno): void
+    {
+        $vencTs = min(time() + self::HORAS_PLAZO * 3600, strtotime($inicioTurno));
+
+        try {
+            $this->pdo->prepare(
+                "UPDATE pago SET fecha_vencimiento = :venc
+                 WHERE id_turno = :id AND estado = 'Pendiente'"
+            )->execute([
+                ':venc' => date('Y-m-d H:i:s', $vencTs),
+                ':id'   => $idTurno,
+            ]);
+        } catch (PDOException $e) {
+            error_log('Pago reajustarVencimiento: ' . $e->getMessage());
+        }
+    }
+
     /** Anula el pago pendiente de un turno (al cancelarse el turno). */
     public function anularPorTurno(int $idTurno): void
     {
