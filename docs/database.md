@@ -178,6 +178,7 @@ Ejecutar **en este orden** (cada una asume la anterior):
 | 9 | `baja_medico.sql` | Baja lógica + permiso |
 | 10 | `vistas.sql` | Vistas |
 | 11 | `auth_v2.sql` | Autenticación v2 |
+| 12 | `perfil.sql` | Columnas de contacto editables desde el perfil |
 
 ## Defectos de esquema corregidos en `auth_v2.sql`
 
@@ -200,3 +201,35 @@ El estándar admite 254. Una dirección normal como
 > **Lección:** ambos defectos existían desde el diseño inicial y sólo aparecieron
 > al cargar volumen real. Conviene probar con datos realistas antes de dar por
 > cerrado un esquema.
+
+## Los mismos defectos, corregidos en `perfil.sql`
+
+Al habilitar la edición del propio teléfono y correo aparecieron **tres columnas
+más** con el mismo problema. Ninguna se había notado porque hasta entonces esos
+datos no se editaban desde la aplicación.
+
+| Columna | Era | Es | Qué rompía |
+|---|---|---|---|
+| `medico.telefono` | `int(10) unsigned` | `VARCHAR(30)` | Un celular de 11 dígitos se aplastaba en 4294967295 |
+| `medico.email` | `varchar(30)` | `VARCHAR(120)` | Truncaba direcciones institucionales normales |
+| `usuario.email` | `varchar(100)` | `VARCHAR(120)` | Ver abajo |
+
+### El caso de `usuario.email`
+
+Es el más silencioso de los tres. El registro validaba hasta **120** caracteres y
+guardaba el mismo correo en dos tablas: `paciente.email` (que ya era 120) y
+`usuario.email` (que era 100).
+
+Una dirección de entre 101 y 120 caracteres pasaba la validación, entraba entera
+en `paciente` y **truncada** en `usuario`. Esa persona quedaba sin poder iniciar
+sesión con su correo ni recuperar la contraseña: las dos búsquedas son por
+igualdad exacta contra un valor que ya no era el suyo.
+
+> **Por qué ninguno daba error:** el `sql_mode` de esta instalación no incluye
+> `STRICT_TRANS_TABLES`. Sin modo estricto MySQL **satura o trunca en silencio**
+> en vez de rechazar la escritura. Es lo que convierte un tipo mal elegido en una
+> pérdida de datos invisible.
+
+**Verificado** tras la migración: los 6 teléfonos de médicos se convirtieron sin
+perder un dígito, y un teléfono de 11 dígitos guardado desde el perfil ahora se
+almacena completo.

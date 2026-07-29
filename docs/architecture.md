@@ -17,7 +17,8 @@ dependencias: el motivo está registrado en [ADR-0001](adr/0001-sin-framework.md
 │  APACHE + PHP                                               │
 │                                                             │
 │  Puntos de entrada          index / login / registro /      │
-│                             dashboard / Controlador*.php    │
+│                             dashboard / perfil /            │
+│                             Controlador*.php                │
 │         │                                                   │
 │         ▼                                                   │
 │  Seguridad                  seguridad.php  → sesión, CSP    │
@@ -110,8 +111,9 @@ switch ($accion) {
 Tras una operación exitosa **siempre redirigen** (patrón POST/Redirect/GET), para
 que al recargar no se repita el envío.
 
-`ControladorAuth` es la excepción: es una clase con métodos, porque no se visita
-como URL sino que lo incluyen `login.php`, `registro.php` y `logout.php`, cada uno
+`ControladorAuth` y `ControladorPerfil` son las excepciones: son clases con
+métodos, porque no se visitan como URL sino que las incluyen los puntos de entrada
+de la raíz —`login.php`, `registro.php`, `logout.php` y `perfil.php`—, cada uno
 con su propio flujo.
 
 ### Vistas (`sistema/vistas/`)

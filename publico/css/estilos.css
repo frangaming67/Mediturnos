@@ -143,12 +143,27 @@ a:hover { text-decoration: underline; }
     border-top: 1px solid rgba(255,255,255,.08);
     display: flex; align-items: center; gap: 10px;
 }
+/* El bloque avatar + nombre es un enlace a "Mi perfil": es donde la gente
+   busca su cuenta, así que se aprovecha en vez de sumar un ítem al menú.
+   El padding negativo compensa el margin para agrandar el área clickeable
+   sin mover nada de lugar. */
+.sidebar-user-link {
+    flex: 1; min-width: 0;
+    display: flex; align-items: center; gap: 10px;
+    padding: 5px; margin: -5px; border-radius: 8px;
+    transition: background .15s;
+}
+.sidebar-user-link:hover,
+.sidebar-user-link.activo { background: rgba(255,255,255,.09); text-decoration: none; }
+
 .sidebar-user .avatar {
     width: 34px; height: 34px;
     border-radius: 50%; background: var(--azul);
     display: flex; align-items: center; justify-content: center;
     font-weight: 700; color: var(--blanco); font-size: .85rem; flex-shrink: 0;
+    overflow: hidden;   /* recorta la foto al círculo */
 }
+.sidebar-user .avatar img { width: 100%; height: 100%; object-fit: cover; }
 .sidebar-user .user-info   { flex: 1; min-width: 0; }
 .sidebar-user .user-nombre { font-size: .82rem; color: var(--blanco); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .sidebar-user .user-rol    { font-size: .72rem; color: rgba(255,255,255,.45); text-transform: capitalize; }

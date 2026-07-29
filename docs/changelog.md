@@ -7,8 +7,36 @@ Versionado según [SemVer](https://semver.org/lang/es/).
 
 ## [Sin publicar]
 
+### Agregado
+
+**Perfil del usuario** (`perfil.php`)
+- Cambiar la foto (arrastrar y soltar, con vista previa) y quitarla
+- Editar nombre, apellido y correo, sincronizados entre `usuario` y la ficha
+- Datos personales: fecha de nacimiento, sexo, teléfono y dirección
+- Obra social y número de afiliado, con el plan actual preseleccionado
+- Cambio de contraseña pidiendo la actual, con medidor de fortaleza
+- Se adapta al rol: el admin no ve cobertura, el médico no ve DNI ni obra social
+- La barra lateral muestra la foto y enlaza al perfil
+
+**Validación unificada** (`includes/validacion.php`)
+- Las reglas de campo dejan de estar escritas tres veces (registro,
+  restablecimiento y perfil) y pasan a un único lugar
+
+### Corregido
+
+- **`medico.telefono` era `int`.** Mismo defecto que ya se había corregido en
+  `paciente`: un celular de 11 dígitos se aplastaba en 4294967295. Se detectó al
+  habilitar la edición del teléfono desde el perfil.
+- **`medico.email` era `varchar(30)`.** Truncaba direcciones institucionales.
+- **`usuario.email` era `varchar(100)`** mientras el registro validaba 120 y
+  `paciente.email` aceptaba 120. Una dirección de 101 a 120 caracteres se
+  guardaba entera en una tabla y truncada en la otra: esa persona quedaba sin
+  poder iniciar sesión con su correo ni recuperar la contraseña.
+- **`restablecer.php` tenía su propia `PASS_MIN`** sin relación con la de
+  `ControladorAuth`. Cambiar una y olvidar la otra no habría dado ningún error.
+- Nombre y apellido no validaban largo: MySQL los recortaba a 30 en silencio.
+
 ### Pendiente
-- Pantalla de perfil del usuario
 - Dashboard ejecutivo del administrador
 
 ---

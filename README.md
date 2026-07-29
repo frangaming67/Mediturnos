@@ -47,6 +47,12 @@ salud administrar agendas, cobros y coberturas desde un panel interno.
 - Panel con KPIs, agenda del día, pagos pendientes y recaudación por médico.
 - Gestión de usuarios y permisos.
 
+### Mi perfil (todos los roles)
+- Foto de perfil con arrastrar y soltar; el servidor la recorta y la re-genera.
+- Datos de la cuenta, datos personales, obra social y número de afiliado.
+- Cambio de contraseña **pidiendo la actual**, con medidor de fortaleza.
+- La pantalla se adapta al rol: sólo muestra lo que esa cuenta puede tener.
+
 ### Reglas de negocio destacadas
 - **Imposible reservar dos veces el mismo horario.** La garantía la da un índice
   único del motor de base de datos, no el código PHP: dos pacientes simultáneos
@@ -110,10 +116,11 @@ mysql -u root --default-character-set=utf8mb4 mediturnos < ausencias_medico.sql
 mysql -u root --default-character-set=utf8mb4 mediturnos < baja_medico.sql
 mysql -u root --default-character-set=utf8mb4 mediturnos < vistas.sql
 mysql -u root --default-character-set=utf8mb4 mediturnos < auth_v2.sql
+mysql -u root --default-character-set=utf8mb4 mediturnos < perfil.sql
 ```
 
-> El orden importa: las migraciones dependen de las anteriores. `auth_v2.sql` va
-> siempre al final y es idempotente (se puede volver a correr sin romper nada).
+> El orden importa: cada migración asume la anterior. `perfil.sql` es la última y
+> depende de `auth_v2.sql`.
 
 Abrir `http://localhost/mediturnos/`.
 
@@ -230,6 +237,7 @@ mediturnos/
 ├── restablecer.php         Nueva contraseña
 ├── logout.php              Cierre de sesión
 ├── dashboard.php           Router por rol
+├── perfil.php              Mi perfil (foto, datos, cobertura, contraseña)
 │
 ├── config/
 │   ├── conexion.php        Conexión PDO + zona horaria
@@ -238,12 +246,13 @@ mediturnos/
 ├── includes/
 │   ├── auth.php            Sesión, roles, permisos, CSRF
 │   ├── seguridad.php       Cookies, cabeceras, anti fuerza bruta
+│   ├── validacion.php      Reglas de campo compartidas
 │   ├── mailer.php          Envío de correo (SMTP / archivo)
 │   └── subida_imagen.php   Subida segura de imágenes
 │
 ├── sistema/
-│   ├── modelos/            9 clases de acceso a datos
-│   ├── controladores/      10 controladores
+│   ├── modelos/            10 clases de acceso a datos
+│   ├── controladores/      11 controladores
 │   └── vistas/             Plantillas, layouts y componentes
 │
 ├── dashboard/              Paneles por rol + componentes

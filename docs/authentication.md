@@ -46,6 +46,7 @@
 | `permisos` | Array para el control fino |
 | `id_paciente` | Aísla los datos de un paciente a los suyos |
 | `matricula` | Aísla la agenda de un médico a la suya |
+| `foto` | Avatar de la barra lateral, sin consultar la base en cada página |
 | `ultimo_acceso` | Vencimiento por inactividad (30 min) |
 | `csrf_token` | Secreto compartido con los formularios |
 
@@ -78,21 +79,56 @@ huérfana. Si el alta falla después de guardar la foto, la foto también se eli
 
 ### Validaciones del servidor
 
-| Campo | Regla |
-|---|---|
-| Nombre / Apellido | Obligatorios |
-| DNI | 7 a 9 dígitos, sólo números, único |
-| Teléfono | 8 a 15 dígitos (admite separadores) |
-| Email | Formato válido, ≤120, único |
-| Usuario | 4-40 caracteres `[a-zA-Z0-9._-]`, único |
-| Contraseña | ≥8, al menos una letra y un número, coincidente |
-| Fecha nac. | Fecha real, no futura, ≥1900 |
-| Sexo | Dentro del ENUM |
-| Plan | Debe existir en `plan_os` |
-| Nº afiliado | 3-50 caracteres `[A-Za-z0-9/-]` |
+Las reglas viven en **`includes/validacion.php`** (clase `Validacion`), un solo
+lugar para las tres pantallas que piden los mismos datos: el registro, el
+restablecimiento por correo y el perfil.
+
+| Campo | Regla | Método |
+|---|---|---|
+| Nombre / Apellido | Obligatorios, ≤30 (ancho real de la columna) | `nombre()` |
+| DNI | 7 a 9 dígitos, sólo números, único | `dni()` |
+| Teléfono | 8 a 15 dígitos (admite separadores) | `telefono()` |
+| Email | Formato válido, ≤120, único | `email()` |
+| Usuario | 4-40 caracteres `[a-zA-Z0-9._-]`, único | `usuario()` |
+| Contraseña | ≥8, al menos una letra y un número, coincidente | `password()` |
+| Fecha nac. | Fecha real, no futura, ≥1900 | `fechaNac()` |
+| Sexo | Dentro del ENUM | `sexo()` |
+| Dirección | ≤150 | `direccion()` |
+| Nº afiliado | 3-50 caracteres `[A-Za-z0-9/-]` | `nroAfiliado()` |
+| Plan | Debe existir en `plan_os` | consulta a la base |
+
+Cada método devuelve el **mensaje de error** o `null` si el valor es válido:
+
+```php
+if ($err = Validacion::dni($dni)) return $err;
+```
 
 Todas se repiten en el servidor aunque el formulario ya valide: el JavaScript se
 desactiva y el POST se arma a mano.
+
+> **Por qué se unificaron.** Estaban escritas tres veces, y `restablecer.php`
+> declaraba su propia constante `PASS_MIN = 8` sin relación con la de
+> `ControladorAuth`. Subir el mínimo en un archivo y olvidarse del otro no habría
+> dado ningún error: el sistema simplemente pediría contraseñas distintas según
+> por dónde entrara la persona.
+
+## Cambio de contraseña desde el perfil
+
+`perfil.php` permite cambiarla con la sesión abierta, y aun así **exige la
+contraseña actual**. No es burocracia: si alguien se levanta sin cerrar sesión,
+cualquiera que pase podría cambiarle la clave y dejarlo afuera de su cuenta.
+Pedir la actual convierte "tener la sesión abierta" en "además saber la
+contraseña".
+
+| Control | Motivo |
+|---|---|
+| Verifica la contraseña actual | Que la sesión abierta no alcance |
+| Mismo bloqueo que el login, con identificador `perfil:usuario` | Pedir la actual abre la puerta a probarlas de a una. El prefijo evita que alguien con la sesión secuestrada deje al dueño sin poder iniciar sesión |
+| La nueva debe ser distinta de la actual | Cambiarla por la misma no cambia nada y da falsa sensación de renovación |
+| `session_regenerate_id(true)` al terminar | Si alguien hubiera robado la cookie, el id viejo deja de servirle en el momento en que el dueño cambia la clave |
+
+**Verificado:** tras el cambio, la contraseña vieja deja de servir, la nueva
+funciona, y la sesión de quien la cambió sigue abierta.
 
 ## Recuperación de contraseña
 

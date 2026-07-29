@@ -1,0 +1,157 @@
+/*
+ * publico/css/perfil.css
+ * ═══════════════════════════════════════════════════════════════════
+ * Pantalla "Mi perfil".
+ *
+ * Sólo trae lo que es PROPIO de esta pantalla: la cabecera con el
+ * avatar grande, el índice lateral y unos pocos ajustes de formulario.
+ * Todo lo demás ya existe y se reutiliza:
+ *   · estilos.css → .panel, .form-grid, .form-control, .btn, .alerta
+ *   · auth.css    → .zona-foto, .fuerza, .requisitos, .caps, .btn-ojo
+ *
+ * Se carga sólo en perfil.php (variable $cssExtra del navbar), así que
+ * no le suma peso a ninguna otra pantalla del sistema.
+ * ═══════════════════════════════════════════════════════════════════
+ */
+
+/* ── Cabecera ─────────────────────────────────────────────────
+   Identifica de quién es la cuenta antes de mostrar nada editable:
+   la persona confirma de un vistazo que está mirando SU perfil. */
+.perfil-cabecera {
+    display: flex; align-items: center; gap: 22px; flex-wrap: wrap;
+    background: linear-gradient(135deg, var(--azul-osc) 0%, var(--azul) 100%);
+    color: #fff;
+    border-radius: var(--radio);
+    padding: 26px 28px;
+    margin-bottom: 22px;
+    box-shadow: var(--sombra-md);
+}
+
+.perfil-avatar {
+    width: 92px; height: 92px; flex-shrink: 0;
+    border-radius: 50%; overflow: hidden;
+    display: grid; place-items: center;
+    background: rgba(255,255,255,.18);
+    border: 3px solid rgba(255,255,255,.35);
+    font-size: 2rem; font-weight: 800; letter-spacing: -1px;
+}
+.perfil-avatar img { width: 100%; height: 100%; object-fit: cover; }
+
+.perfil-id { min-width: 0; }   /* deja que el texto largo se corte en vez de desbordar */
+.perfil-id h1 {
+    font-size: 1.55rem; font-weight: 800; letter-spacing: -.6px;
+    line-height: 1.2; margin-bottom: 5px;
+}
+.perfil-usuario {
+    display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+    font-size: .88rem; opacity: .85; margin-bottom: 14px;
+}
+/* El badge del rol viene de estilos.css con fondo claro: acá se
+   reescribe para que se lea sobre el degradado azul. */
+.perfil-usuario .badge {
+    background: rgba(255,255,255,.2); color: #fff;
+    text-transform: capitalize; opacity: 1;
+}
+
+.perfil-meta {
+    list-style: none;
+    display: flex; flex-wrap: wrap; gap: 8px 22px;
+    font-size: .84rem;
+}
+.perfil-meta li { display: flex; align-items: center; gap: 7px; opacity: .9; }
+.perfil-meta svg { flex-shrink: 0; opacity: .8; }
+
+/* ── Índice + secciones ──────────────────────────────────────
+   El índice queda fijo al hacer scroll para no perder la referencia
+   de dónde se está dentro de una página larga. */
+.perfil-grid {
+    display: grid;
+    grid-template-columns: 220px minmax(0, 1fr);
+    gap: 22px;
+    align-items: start;
+}
+
+.perfil-nav {
+    position: sticky; top: calc(var(--header-h) + 24px);
+    display: flex; flex-direction: column; gap: 2px;
+    background: var(--blanco);
+    border-radius: var(--radio);
+    box-shadow: var(--sombra);
+    padding: 10px;
+}
+.perfil-nav a {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 12px; border-radius: var(--radio-sm);
+    font-size: .87rem; font-weight: 500; color: var(--gris-med);
+    transition: background .15s, color .15s;
+}
+.perfil-nav a:hover {
+    background: var(--azul-claro); color: var(--azul-osc);
+    text-decoration: none;
+}
+.perfil-nav svg { flex-shrink: 0; opacity: .7; }
+
+/* Compensa la barra superior fija: sin esto, al saltar a una sección
+   el título queda tapado por la topbar. */
+.perfil-secciones > .panel { scroll-margin-top: calc(var(--header-h) + 16px); }
+.perfil-secciones > .panel:last-child { margin-bottom: 0; }
+
+/* ── Ajustes de formulario ───────────────────────────────────── */
+
+/* Los campos de sólo lectura (usuario, DNI) tienen que verse distintos
+   de los editables. Si se vieran iguales, la persona intentaría
+   escribir en ellos y no entendería por qué no puede. */
+.form-control[readonly] {
+    background: var(--gris-claro);
+    color: var(--gris);
+    cursor: not-allowed;
+}
+
+/* Envoltorio del botón de ver/ocultar contraseña. El .btn-ojo lo
+   estiliza auth.css; acá sólo se le da el contexto para posicionarse. */
+.input-pass { position: relative; display: flex; align-items: center; }
+.input-pass .form-control { padding-right: 46px; }
+.input-pass .btn-ojo { position: absolute; right: 5px; }
+
+/* La zona de la foto es un <label>: el foco lo recibe el input escondido
+   que tiene adentro, así que el resalte se pinta con :focus-within. */
+.zona-foto:focus-within {
+    border-color: var(--azul); background: var(--azul-claro);
+    box-shadow: 0 0 0 3px rgba(37,99,235,.14);
+}
+
+.cobertura-actual {
+    background: var(--azul-claro); color: var(--azul-osc);
+    border-left: 3px solid var(--azul);
+    border-radius: var(--radio-sm);
+    padding: 12px 15px; margin-bottom: 18px;
+    font-size: .87rem;
+}
+
+/* Confirmación de que las contraseñas coinciden. El color no es la
+   única señal: el texto dice "Coinciden" o "No coinciden" (WCAG 1.4.1). */
+.hint-ok  { color: var(--verde); font-weight: 600; }
+.hint-mal { color: var(--rojo);  font-weight: 600; }
+
+/* ── Responsive ──────────────────────────────────────────────── */
+@media (max-width: 900px) {
+    /* El índice pasa arriba, en una fila que scrollea de costado:
+       ocupa poco y sigue dando acceso a todas las secciones. */
+    .perfil-grid { grid-template-columns: 1fr; }
+    .perfil-nav {
+        position: static;
+        flex-direction: row; overflow-x: auto;
+        padding: 8px;
+    }
+    .perfil-nav a { white-space: nowrap; }
+}
+
+@media (max-width: 560px) {
+    .perfil-cabecera { padding: 22px; gap: 16px; }
+    .perfil-avatar   { width: 72px; height: 72px; font-size: 1.6rem; }
+    .perfil-id h1    { font-size: 1.3rem; }
+    .perfil-meta     { flex-direction: column; gap: 6px; }
+    /* Los botones de acción se apilan y ocupan todo el ancho */
+    .form-acciones       { flex-direction: column; align-items: stretch; }
+    .form-acciones .btn  { width: 100%; justify-content: center; }
+}

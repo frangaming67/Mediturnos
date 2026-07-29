@@ -2,11 +2,6 @@
 
 ## Próximo
 
-### Perfil del usuario
-Pantalla para que cada uno gestione su cuenta: cambiar foto y contraseña, editar
-datos personales, actualizar obra social y número de afiliado.
-Reutiliza `SubidaImagen` y el patrón de validación del registro.
-
 ### Dashboard ejecutivo del administrador
 Panel con KPIs del día, pacientes por especialidad, mapa de ocupación de
 consultorios y recaudación por médico.
@@ -44,8 +39,12 @@ Ordenada por impacto:
 | Media | Accesibilidad pendiente | Etiquetas en los formularios viejos, modales sin `role="dialog"`, calendario no operable por teclado |
 | Media | CSRF en el registro | Es alta pública: convendría token más CAPTCHA |
 | Media | Buscador de pacientes | `turnos/nuevo` carga los 1010 pacientes en un `datalist` (155 KB) |
+| Media | Nombre duplicado en dos tablas | Nombre, apellido y correo viven en `usuario` y en `paciente`/`medico`. `Perfil::guardarCuenta()` escribe las dos en una transacción, pero cualquier código nuevo que toque una sola las desincroniza |
+| Baja | Widgets de formulario en `auth.css` | La zona de foto, el medidor de contraseña y la lista de requisitos los usa también `perfil.php`, que por eso carga `auth.css`. Merecen un archivo propio con un nombre que no diga "auth" |
+| Baja | Modo estricto de MySQL | Sin `STRICT_TRANS_TABLES` un tipo mal elegido trunca en silencio. Los tres casos conocidos ya se corrigieron, pero el motor sigue permitiendo el próximo |
+| Baja | Campos como array en los formularios viejos | Un POST con `nombre[]=a` hace que `trim()` reciba un array y devuelva un 500. El perfil ya lo cubre; el registro y los ABM no |
 | Baja | CSP estricta | Requiere sacar el JavaScript y los estilos en línea |
-| Baja | Pruebas automatizadas | Hoy la verificación es manual |
+| Baja | Pruebas automatizadas | Hoy la verificación es manual, con guiones de un solo uso |
 
 ---
 

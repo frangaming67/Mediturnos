@@ -23,6 +23,13 @@
 $usuarioSesion = usuarioActual();
 $rolActual = $usuarioSesion['rol'];
 $iniciales = strtoupper(substr($usuarioSesion['nombre'],0,1) . substr($usuarioSesion['apellido'],0,1));
+
+// Foto de perfil: se lee de la sesión (la guarda el login) para no hacer una
+// consulta extra en CADA página del sistema sólo para dibujar un avatar de
+// 34 px. Si no hay foto —o si la sesión es anterior a esta versión— se
+// muestran las iniciales, que es el comportamiento de siempre.
+require_once __DIR__ . '/../../../includes/subida_imagen.php';
+$fotoSesion = SubidaImagen::url($_SESSION['foto'] ?? null);
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -53,6 +60,14 @@ $iniciales = strtoupper(substr($usuarioSesion['nombre'],0,1) . substr($usuarioSe
     <?php if ($rolActual === 'medico'): ?>
     <link rel="stylesheet" href="<?= $cssVer('medico.css') ?>">
     <?php endif; ?>
+    <?php
+    // Hojas de una sola pantalla. La vista las declara ANTES de incluir este
+    // archivo ($cssExtra = ['perfil.css']) y se cargan al final, para que
+    // puedan ajustar lo que definió estilos.css. Sin la variable no cambia
+    // nada: las ~30 vistas que ya existían siguen igual.
+    foreach (($cssExtra ?? []) as $hoja): ?>
+    <link rel="stylesheet" href="<?= $cssVer($hoja) ?>">
+    <?php endforeach; ?>
 </head>
 <body>
 <div class="layout">
@@ -128,11 +143,21 @@ $iniciales = strtoupper(substr($usuarioSesion['nombre'],0,1) . substr($usuarioSe
     </nav>
 
     <div class="sidebar-user">
-        <div class="avatar"><?= $iniciales ?></div>
-        <div class="user-info">
-            <div class="user-nombre"><?= htmlspecialchars($usuarioSesion['nombre'] . ' ' . $usuarioSesion['apellido']) ?></div>
-            <div class="user-rol"><?= htmlspecialchars($rolActual) ?></div>
-        </div>
+        <?php // El bloque entero es el acceso al perfil: es donde la gente
+              // busca su cuenta, y así no hace falta un ítem más en el menú. ?>
+        <a href="<?= BASE_URL ?>perfil.php" class="sidebar-user-link <?= basename($_SERVER['PHP_SELF']) === 'perfil.php' ? 'activo' : '' ?>" title="Mi perfil">
+            <div class="avatar">
+                <?php if ($fotoSesion): ?>
+                    <img src="<?= htmlspecialchars($fotoSesion) ?>" alt="">
+                <?php else: ?>
+                    <?= $iniciales ?>
+                <?php endif; ?>
+            </div>
+            <div class="user-info">
+                <div class="user-nombre"><?= htmlspecialchars($usuarioSesion['nombre'] . ' ' . $usuarioSesion['apellido']) ?></div>
+                <div class="user-rol"><?= htmlspecialchars($rolActual) ?></div>
+            </div>
+        </a>
         <a href="<?= BASE_URL ?>logout.php" class="btn-logout" title="Cerrar sesión">
             <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
         </a>

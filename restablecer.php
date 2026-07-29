@@ -11,6 +11,7 @@
 // -----------------------------------------------------------------
 require_once __DIR__ . '/config/conexion.php';
 require_once __DIR__ . '/includes/seguridad.php';
+require_once __DIR__ . '/includes/validacion.php';
 require_once __DIR__ . '/sistema/modelos/Usuario.php';
 
 iniciarSesionSegura();
@@ -25,18 +26,14 @@ $modelo = new Usuario($pdo);
 $token  = trim($_GET['token'] ?? $_POST['token'] ?? '');
 $error  = null;
 
-/** Reglas de contraseña, en un solo lugar (cliente y servidor las comparten). */
-const PASS_MIN = 8;
-
-/** Valida la contraseña en el SERVIDOR. El JS es sólo ayuda visual. */
-function validarPassword(string $p, string $p2): ?string
-{
-    if (strlen($p) < PASS_MIN)          return 'La contraseña debe tener al menos ' . PASS_MIN . ' caracteres.';
-    if (!preg_match('/[A-Za-z]/', $p))  return 'La contraseña debe incluir al menos una letra.';
-    if (!preg_match('/\d/', $p))        return 'La contraseña debe incluir al menos un número.';
-    if ($p !== $p2)                     return 'Las contraseñas no coinciden.';
-    return null;
-}
+// Las reglas de contraseña son las MISMAS que las del registro y las
+// del cambio desde el perfil, así que viven en includes/validacion.php.
+// Antes esta pantalla tenía su propia copia y su propia constante: si
+// alguien hubiera subido el mínimo allá, acá habría seguido aceptando
+// contraseñas de 8 sin que nada fallara.
+// La constante se conserva con este nombre porque el HTML y el
+// JavaScript de más abajo ya la imprimen así.
+const PASS_MIN = Validacion::PASS_MIN;
 
 // ── Validación inicial del token ─────────────────────────────
 $reset = $token !== '' ? $modelo->validarTokenReset($token) : false;
@@ -52,7 +49,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } else {
         $p1 = (string) ($_POST['password'] ?? '');
         $p2 = (string) ($_POST['password2'] ?? '');
-        $error = validarPassword($p1, $p2);
+        $error = Validacion::password($p1, $p2);
 
         if ($error === null) {
             $ok = $modelo->restablecerPassword(
