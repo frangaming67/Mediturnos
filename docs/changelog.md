@@ -9,6 +9,16 @@ Versionado según [SemVer](https://semver.org/lang/es/).
 
 ### Agregado
 
+**Notificaciones y correos** — cimientos del Área del Paciente
+- Tabla `notificacion` y centro de avisos por usuario
+- Servicio `Notificador` con canales intercambiables (in-app + correo), con la
+  arquitectura lista para enchufar push sin tocar ningún controlador
+- Catálogo de 18 tipos de aviso, cada uno con su icono y su decisión de si
+  además sale por correo
+- `emailPlantilla()`: un único diseño para todos los correos del sistema
+- `notificarUnaVez()` para recordatorios que no se repiten
+- El correo de recuperación pasa a usar la plantilla común
+
 **Perfil del usuario** (`perfil.php`)
 - Cambiar la foto (arrastrar y soltar, con vista previa) y quitarla
 - Editar nombre, apellido y correo, sincronizados entre `usuario` y la ficha
