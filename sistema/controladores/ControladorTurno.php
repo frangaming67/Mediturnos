@@ -20,6 +20,7 @@
 
 require_once __DIR__ . '/../../config/conexion.php';
 require_once __DIR__ . '/../../includes/auth.php';
+require_once __DIR__ . '/../../includes/notificaciones.php';
 require_once __DIR__ . '/../modelos/Turno.php';
 require_once __DIR__ . '/../modelos/Pago.php';
 
@@ -33,6 +34,39 @@ $modelo  = new Turno($pdo);
 $accion  = $_GET['accion'] ?? 'index';
 $mensaje = null;
 $tipoMsg = null;
+
+/**
+ * Trae un turno CON permiso de verlo, o corta.
+ *
+ * Se extrajo a función porque el mismo control se necesita en 'detalle',
+ * 'reprogramar' y 'guardarReprogramacion'; repetido en los tres casos
+ * sería fácil de olvidar actualizar en alguno el día que cambie la regla
+ * — que es exactamente cómo aparecen los agujeros de IDOR.
+ *
+ * El id del dueño sale SIEMPRE de la sesión, nunca de la petición.
+ */
+function turnoPropio(Turno $modelo, int $idTurno): array
+{
+    $t = $modelo->detalleDeTurno($idTurno);
+
+    if (!$t) {
+        header('Location: ' . BASE_URL . 'sistema/controladores/ControladorTurno.php?accion=index&err='
+            . urlencode('No encontramos ese turno.'));
+        exit;
+    }
+
+    $rol = $_SESSION['rol'] ?? '';
+    $ajeno = ($rol === 'paciente' && (int) $t['id_paciente'] !== (int) ($_SESSION['id_paciente'] ?? 0))
+          || ($rol === 'medico'   && (int) $t['matricula']   !== (int) ($_SESSION['matricula']   ?? 0));
+
+    if ($ajeno) {
+        http_response_code(403);
+        include __DIR__ . '/../vistas/layouts/403.php';
+        exit;
+    }
+
+    return $t;
+}
 
 switch ($accion) {
 
@@ -177,6 +211,24 @@ switch ($accion) {
             exit;
         }
 
+        // ── Guard de negocio: la cobertura tiene que ser SUYA ────
+        // El desplegable ya sólo ofrece las del paciente, pero el <select>
+        // se edita desde las herramientas del navegador y el POST se arma
+        // a mano. Sin este control, cualquiera podía elegir la obra social
+        // con mejor convenio y pagar menos — o directamente nada: IOMA
+        // tiene 100% de descuento con una de las médicas, y con el monto
+        // en cero el pago se da por saldado solo.
+        //
+        // Se aplica sólo al rol paciente: la recepción sí puede elegir otra
+        // cobertura, porque atiende casos reales (alguien que llega con una
+        // credencial distinta a la que tiene cargada).
+        if ($_SESSION['rol'] === 'paciente'
+            && !$modelo->planPermitido($id_paciente, $datos['id_plan'])) {
+            header('Location: ' . BASE_URL . 'agendar.php?err='
+                . urlencode('Esa cobertura no está a tu nombre. Elegí una de las tuyas o pagá como particular.'));
+            exit;
+        }
+
         // Guard de integridad: no permitir reservar un horario que ya pasó.
         // El formulario y el calendario ya ocultan estos slots (Turno::obtenerSlots),
         // pero un POST tardío o manipulado podría traerlos; sin este control el pago
@@ -188,6 +240,24 @@ switch ($accion) {
 
         try {
             $idTurno = $modelo->reservar($datos);
+
+            // Avisarle al paciente que su turno quedó tomado. Va DESPUÉS
+            // de reservar y antes del pago: si el aviso fallara, el turno
+            // ya está y eso es lo que importa (notificar nunca revierte
+            // una operación, ver includes/notificaciones.php).
+            $t = $modelo->buscarPorId($idTurno);
+            if ($t) {
+                obtenerNotificador($pdo)->notificarPaciente((int) $datos['id_paciente'], new Aviso(
+                    TipoAviso::TURNO_RESERVADO,
+                    'Turno reservado',
+                    'Reservaste un turno con Dr/a. ' . $t['medico'] . ' para el '
+                        . date('d/m/Y', strtotime($t['fecha'])) . ' a las '
+                        . substr($t['hora_inicio'], 0, 5) . ' hs.',
+                    'dashboard.php',
+                    $idTurno,
+                    ['aviso' => 'El turno todavía no está confirmado: se confirma cuando registremos el pago.']
+                ));
+            }
 
             // Generar el pago pendiente y llevar al paciente a la pantalla
             // donde elige pagar ahora (tarjeta) o más tarde.
@@ -204,7 +274,12 @@ switch ($accion) {
         } catch (Exception $e) {
             // Incluye la RuntimeException de "slot ya reservado" (control
             // de concurrencia) y cualquier PDOException de base.
-            header('Location: ' . BASE_URL . 'sistema/controladores/ControladorTurno.php?accion=nuevo&err=' . urlencode($e->getMessage()));
+            // El paciente vuelve a agendar.php, que es de donde salió; el
+            // personal a turnos/nuevo, que es su formulario.
+            $volverA = $_SESSION['rol'] === 'paciente'
+                ? BASE_URL . 'agendar.php?err='
+                : BASE_URL . 'sistema/controladores/ControladorTurno.php?accion=nuevo&err=';
+            header('Location: ' . $volverA . urlencode($e->getMessage()));
             exit;
         }
         break;
@@ -225,20 +300,54 @@ switch ($accion) {
             }
         }
 
+        // El paciente cancela desde su panel y tiene que volver ahí, no
+        // caer en el listado del sistema: perdería el contexto de dónde
+        // estaba parado.
+        $destino = ($_POST['volver'] ?? '') === 'dashboard'
+            ? BASE_URL . 'dashboard.php'
+            : BASE_URL . 'sistema/controladores/ControladorTurno.php?accion=index';
+        $sep = strpos($destino, '?') === false ? '?' : '&';
+
+        // Se leen los datos ANTES de cancelar: después el turno ya figura
+        // cancelado y el aviso no podría contar de qué turno se trata.
+        $turnoCancelado = $modelo->buscarPorId($id);
+
         try {
             $modelo->cancelar($id, $obs);
             // Si el turno tenía un pago pendiente, anularlo.
             (new Pago($pdo))->anularPorTurno($id);
-            header('Location: ' . BASE_URL . 'sistema/controladores/ControladorTurno.php?accion=index&msg=cancelado');
+
+            if ($turnoCancelado) {
+                obtenerNotificador($pdo)->notificarPaciente((int) $turnoCancelado['id_paciente'], new Aviso(
+                    TipoAviso::TURNO_CANCELADO,
+                    'Turno cancelado',
+                    'Se canceló tu turno con Dr/a. ' . $turnoCancelado['medico'] . ' del '
+                        . date('d/m/Y', strtotime($turnoCancelado['fecha'])) . ' a las '
+                        . substr($turnoCancelado['hora_inicio'], 0, 5) . ' hs.',
+                    'agendar.php',
+                    $id,
+                    [
+                        'parrafos' => [
+                            'El horario quedó liberado. Si necesitás otro turno podés '
+                            . 'sacarlo cuando quieras desde tu cuenta.',
+                        ],
+                        'nota' => $obs !== '' ? 'Motivo registrado: ' . $obs : null,
+                    ],
+                    null,
+                    'Sacar otro turno'
+                ));
+            }
+
+            header('Location: ' . $destino . $sep . 'msg=cancelado');
             exit;
         } catch (RuntimeException $e) {
             // El SP CancelarTurno rechazó la cancelación (turno inexistente
             // o ya finalizado): mostramos su mensaje al usuario.
-            header('Location: ' . BASE_URL . 'sistema/controladores/ControladorTurno.php?accion=index&err=' . urlencode($e->getMessage()));
+            header('Location: ' . $destino . $sep . 'err=' . urlencode($e->getMessage()));
             exit;
         } catch (PDOException $e) {
             error_log('ControladorTurno cancelar: ' . $e->getMessage());
-            header('Location: ' . BASE_URL . 'sistema/controladores/ControladorTurno.php?accion=index&err=' . urlencode('No se pudo cancelar el turno.'));
+            header('Location: ' . $destino . $sep . 'err=' . urlencode('No se pudo cancelar el turno.'));
             exit;
         }
         break;
@@ -289,6 +398,135 @@ switch ($accion) {
         $modelo->actualizarEstado($id, $estado, $obs);
         header('Location: ' . BASE_URL . 'sistema/controladores/ControladorTurno.php?accion=index&msg=estado_ok');
         exit;
+
+    // ── Detalle de un turno ──────────────────────────────────
+    case 'detalle':
+        $turno     = turnoPropio($modelo, (int) ($_GET['id'] ?? 0));
+        $historial = $modelo->obtenerHistorial((int) $turno['id_turno']);
+        $motivoNoMover = $modelo->motivoNoReprogramable($turno);
+        require __DIR__ . '/../vistas/turnos/detalle.php';
+        break;
+
+    // ── Reprogramar: elegir el horario nuevo ─────────────────
+    case 'reprogramar':
+        verificarRol(['admin', 'recepcionista', 'paciente']);
+        $turno = turnoPropio($modelo, (int) ($_GET['id'] ?? 0));
+
+        $motivo = $modelo->motivoNoReprogramable($turno);
+        if ($motivo !== null) {
+            header('Location: ' . BASE_URL . 'sistema/controladores/ControladorTurno.php?accion=detalle&id='
+                . (int) $turno['id_turno'] . '&err=' . urlencode($motivo));
+            exit;
+        }
+
+        // Por defecto se muestra el día del turno actual; desde ahí la
+        // persona navega. Nunca una fecha pasada.
+        $fechaElegida = trim($_GET['fecha'] ?? '');
+        if ($fechaElegida === '' || strtotime($fechaElegida) < strtotime('today')) {
+            $fechaElegida = max($turno['fecha'], date('Y-m-d'));
+        }
+
+        // Sólo los horarios de la MISMA especialidad: reprogramar es mover
+        // la misma consulta de momento, no cambiarla por otra distinta.
+        // Para eso está cancelar y sacar un turno nuevo.
+        $slots = array_values(array_filter(
+            $modelo->obtenerSlots((int) $turno['matricula'], $fechaElegida),
+            fn($s) => (int) $s['id_especialidad'] === (int) $turno['id_especialidad']
+        ));
+
+        $mensaje = !empty($_GET['err']) ? urldecode($_GET['err']) : null;
+        require __DIR__ . '/../vistas/turnos/reprogramar.php';
+        break;
+
+    // ── Reprogramar: guardar ─────────────────────────────────
+    case 'guardarReprogramacion':
+        verificarRol(['admin', 'recepcionista', 'paciente']);
+        csrf_verificar();
+
+        $turno = turnoPropio($modelo, (int) ($_POST['id_turno'] ?? 0));
+        $URLD  = BASE_URL . 'sistema/controladores/ControladorTurno.php';
+
+        $motivo = $modelo->motivoNoReprogramable($turno);
+        if ($motivo !== null) {
+            header('Location: ' . $URLD . '?accion=detalle&id=' . (int) $turno['id_turno']
+                . '&err=' . urlencode($motivo));
+            exit;
+        }
+
+        // El slot llega como "hora|id_consultorio|id_especialidad", igual
+        // que en el formulario de alta: un solo campo garantiza que la
+        // hora y el consultorio elegidos sean los del MISMO slot.
+        $partes      = explode('|', (string) ($_POST['slot'] ?? ''));
+        $nuevaFecha  = trim($_POST['fecha'] ?? '');
+        $nuevaHora   = $partes[0] ?? '';
+        $nuevoCons   = (int) ($partes[1] ?? 0);
+        $nuevaEsp    = (int) ($partes[2] ?? 0);
+
+        $volverAlForm = $URLD . '?accion=reprogramar&id=' . (int) $turno['id_turno']
+                      . '&fecha=' . urlencode($nuevaFecha) . '&err=';
+
+        if ($nuevaFecha === '' || $nuevaHora === '' || !$nuevoCons) {
+            header('Location: ' . $volverAlForm . urlencode('Elegí un horario.'));
+            exit;
+        }
+        // La especialidad no puede cambiar: si cambiara, cambiaría también
+        // el precio ya calculado y el pago dejaría de corresponderse.
+        if ($nuevaEsp !== (int) $turno['id_especialidad']) {
+            header('Location: ' . $volverAlForm . urlencode('Ese horario es de otra especialidad.'));
+            exit;
+        }
+        if (strtotime($nuevaFecha . ' ' . $nuevaHora) <= time()) {
+            header('Location: ' . $volverAlForm . urlencode('Ese horario ya pasó.'));
+            exit;
+        }
+        if ($nuevaFecha === $turno['fecha'] && $nuevaHora === $turno['hora_inicio']) {
+            header('Location: ' . $volverAlForm . urlencode('Ese es el horario que ya tenías.'));
+            exit;
+        }
+
+        try {
+            $modelo->reprogramar(
+                (int) $turno['id_turno'], $nuevaFecha, $nuevaHora, $nuevoCons,
+                'Reprogramado por ' . ($_SESSION['rol'] === 'paciente' ? 'el paciente' : 'la clínica')
+            );
+
+            // El plazo de pago nunca puede terminar después del inicio del
+            // turno: si se movió, hay que recalcularlo.
+            (new Pago($pdo))->reajustarVencimiento(
+                (int) $turno['id_turno'], $nuevaFecha . ' ' . $nuevaHora
+            );
+
+            obtenerNotificador($pdo)->notificarPaciente((int) $turno['id_paciente'], new Aviso(
+                TipoAviso::TURNO_REPROGRAMADO,
+                'Turno reprogramado',
+                'Tu turno con Dr/a. ' . $turno['medico'] . ' pasó al '
+                    . date('d/m/Y', strtotime($nuevaFecha)) . ' a las '
+                    . substr($nuevaHora, 0, 5) . ' hs.',
+                'dashboard.php',
+                (int) $turno['id_turno'],
+                ['datos' => [
+                    'Antes'         => date('d/m/Y', strtotime($turno['fecha'])) . ' · ' . substr($turno['hora_inicio'], 0, 5) . ' hs',
+                    'Ahora'         => date('d/m/Y', strtotime($nuevaFecha)) . ' · ' . substr($nuevaHora, 0, 5) . ' hs',
+                    'Profesional'   => $turno['medico'],
+                    'Especialidad'  => $turno['especialidad'],
+                ]],
+                null,
+                'Ver mi turno'
+            ));
+
+            header('Location: ' . $URLD . '?accion=detalle&id=' . (int) $turno['id_turno'] . '&msg=reprogramado');
+            exit;
+
+        } catch (RuntimeException $e) {
+            // Alguien tomó ese horario mientras la persona elegía. El
+            // índice único del motor lo frenó.
+            header('Location: ' . $volverAlForm . urlencode($e->getMessage()));
+            exit;
+        } catch (PDOException $e) {
+            error_log('ControladorTurno reprogramar: ' . $e->getMessage());
+            header('Location: ' . $volverAlForm . urlencode('No se pudo mover el turno. Intentá de nuevo.'));
+            exit;
+        }
 
     // ── Historial de un turno ────────────────────────────────
     case 'historial':
