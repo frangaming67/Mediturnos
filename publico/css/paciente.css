@@ -1,0 +1,245 @@
+/*
+ * publico/css/paciente.css
+ * ═══════════════════════════════════════════════════════════════════
+ * Área del Paciente: panel de inicio, detalle de turno y reprogramación.
+ *
+ * Se carga SÓLO en las pantallas del paciente (variable $cssExtra del
+ * navbar), así que no le suma peso a las ~30 pantallas del personal.
+ *
+ * Reutiliza todo lo que ya existe en estilos.css —.panel, .btn, .badge,
+ * .alerta, .form-control— y agrega únicamente lo propio de este mundo.
+ * ═══════════════════════════════════════════════════════════════════
+ */
+
+/* ── Saludo ───────────────────────────────────────────────────
+   La pantalla abre con el nombre de la persona, no con un título
+   genérico: es SU cuenta, y el sistema tiene que sonar como si la
+   conociera. */
+.pac-saludo { margin-bottom: 26px; }
+.pac-saludo h1 {
+    font-size: 1.75rem; font-weight: 800; letter-spacing: -.8px;
+    color: var(--gris-osc); line-height: 1.2;
+}
+.pac-saludo p { color: var(--gris); font-size: .95rem; margin-top: 4px; }
+
+.pac-titulo-seccion {
+    font-size: .74rem; font-weight: 700; letter-spacing: .09em;
+    text-transform: uppercase; color: var(--gris);
+    margin: 26px 0 12px;
+}
+.pac-titulo-seccion:first-of-type { margin-top: 0; }
+
+/* ── Tarjeta de la próxima cita ───────────────────────────────
+   Es lo más importante de la pantalla, así que es lo único con
+   fondo de color y borde de acento: la jerarquía visual tiene que
+   coincidir con la jerarquía de la información. */
+.pac-cita {
+    background: var(--azul-claro);
+    border-left: 4px solid var(--azul);
+    border-radius: var(--radio);
+    padding: 20px 24px;
+    box-shadow: var(--sombra);
+}
+/* Con pago pendiente el acento pasa a ámbar: hay algo por hacer. */
+.pac-cita--pendiente { background: #fffbeb; border-left-color: var(--amarillo); }
+
+.pac-cita-cab {
+    display: flex; align-items: flex-start; justify-content: space-between;
+    gap: 14px; flex-wrap: wrap; margin-bottom: 14px;
+}
+.pac-cita-cab h3 {
+    font-size: 1.15rem; font-weight: 700; color: var(--azul-osc);
+    line-height: 1.35;
+}
+.pac-cita-esp { font-weight: 500; color: var(--gris-med); }
+
+.pac-cita-estados { display: flex; align-items: center; gap: 9px; flex-shrink: 0; }
+.pac-cuando {
+    font-size: .74rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: .05em; color: var(--gris);
+}
+
+.pac-cita-datos {
+    list-style: none; display: flex; flex-wrap: wrap; gap: 8px 24px;
+    font-size: .9rem; color: var(--gris-med);
+}
+.pac-cita-datos li { display: flex; align-items: center; gap: 7px; }
+.pac-cita-datos svg { flex-shrink: 0; opacity: .65; }
+
+/* ── Aviso de pago pendiente ──────────────────────────────────
+   Va ARRIBA de los botones porque si no se abona a tiempo el turno
+   se cancela solo: es la información más urgente de la tarjeta. */
+.pac-pago-aviso {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 16px; flex-wrap: wrap;
+    margin-top: 16px; padding: 14px 18px;
+    background: var(--blanco); border-radius: var(--radio-sm);
+    border: 1px solid #fcd34d;
+}
+.pac-pago-aviso strong { display: block; color: #92400e; font-size: 1rem; }
+.pac-pago-aviso span   { display: block; color: var(--gris); font-size: .82rem; margin-top: 3px; }
+
+.pac-cita-acciones {
+    display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+    margin-top: 18px; padding-top: 16px;
+    border-top: 1px solid rgba(37,99,235,.15);
+}
+.pac-nota { font-size: .82rem; color: var(--gris); font-style: italic; }
+
+/* ── Estado vacío ─────────────────────────────────────────────
+   Dice QUÉ pasa, aclara que no es un error y ofrece la acción que
+   corresponde. Un panel en blanco deja a la persona preguntándose
+   si el sistema se rompió. */
+.pac-vacio {
+    background: var(--blanco); border-radius: var(--radio);
+    box-shadow: var(--sombra);
+    padding: 44px 28px; text-align: center;
+}
+.pac-vacio-ico {
+    width: 76px; height: 76px; margin: 0 auto 16px;
+    border-radius: 50%; display: grid; place-items: center;
+    background: var(--azul-claro); color: var(--azul);
+}
+.pac-vacio h3 { font-size: 1.08rem; font-weight: 700; color: var(--gris-osc); }
+.pac-vacio p  {
+    color: var(--gris); font-size: .9rem; margin: 8px auto 20px;
+    max-width: 420px; line-height: 1.6;
+}
+
+/* ── Otras citas próximas ─────────────────────────────────────
+   Formato de lista compacta: son secundarias respecto de la próxima,
+   y repetir la tarjeta grande cuatro veces diluiría la principal. */
+.pac-otras { display: flex; flex-direction: column; gap: 9px; }
+.pac-otra {
+    display: flex; align-items: center; gap: 16px;
+    background: var(--blanco); border-radius: var(--radio);
+    box-shadow: var(--sombra); padding: 13px 18px;
+    color: inherit; transition: transform .12s, box-shadow .12s;
+}
+.pac-otra:hover {
+    text-decoration: none; transform: translateY(-1px);
+    box-shadow: var(--sombra-md);
+}
+.pac-otra-fecha {
+    flex-shrink: 0; width: 46px; text-align: center;
+    font-size: .68rem; text-transform: uppercase; color: var(--gris);
+    line-height: 1.15;
+}
+.pac-otra-fecha strong {
+    display: block; font-size: 1.3rem; color: var(--azul); font-weight: 800;
+}
+.pac-otra-txt { flex: 1; min-width: 0; }
+.pac-otra-txt strong { display: block; font-size: .92rem; color: var(--gris-osc); }
+.pac-otra-txt span   { display: block; font-size: .8rem; color: var(--gris); margin-top: 2px; }
+
+/* ── Accesos rápidos ──────────────────────────────────────────
+   Cada tarjeta lleva un dato real debajo del título ("2 pendientes",
+   "8 ya realizados"): un acceso que además informa vale el doble que
+   uno que sólo es un enlace con icono. */
+.pac-accesos {
+    display: grid; gap: 14px;
+    grid-template-columns: repeat(auto-fit, minmax(215px, 1fr));
+}
+.pac-acceso {
+    background: var(--blanco); border-radius: var(--radio);
+    box-shadow: var(--sombra); padding: 20px;
+    display: flex; flex-direction: column; gap: 3px;
+    color: inherit; border: 2px solid transparent;
+    transition: transform .12s, box-shadow .12s, border-color .12s;
+}
+.pac-acceso:hover {
+    text-decoration: none; transform: translateY(-2px);
+    box-shadow: var(--sombra-md); border-color: var(--azul);
+}
+.pac-acceso strong { font-size: .95rem; color: var(--gris-osc); margin-top: 10px; }
+.pac-acceso > span:last-child { font-size: .8rem; color: var(--gris); line-height: 1.45; }
+
+.pac-acceso-ico {
+    width: 44px; height: 44px; border-radius: 12px;
+    display: grid; place-items: center;
+}
+.pac-ico-azul     { background: var(--azul-claro);     color: var(--azul); }
+.pac-ico-verde    { background: var(--verde-claro);    color: var(--verde); }
+.pac-ico-amarillo { background: var(--amarillo-claro); color: var(--amarillo); }
+.pac-ico-gris     { background: var(--gris-claro);     color: var(--gris); }
+
+.pac-cancelar-resumen {
+    background: var(--gris-claro); border-radius: var(--radio-sm);
+    padding: 12px 15px; font-size: .88rem; color: var(--gris-osc);
+    font-weight: 600; margin-bottom: 16px;
+}
+
+/* ── Detalle del turno ────────────────────────────────────────── */
+.pac-detalle-grid {
+    display: grid; gap: 18px;
+    grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
+    align-items: start;
+}
+.pac-datos-lista { list-style: none; }
+.pac-datos-lista li {
+    display: flex; justify-content: space-between; gap: 16px;
+    padding: 11px 0; border-bottom: 1px solid var(--borde);
+    font-size: .89rem;
+}
+.pac-datos-lista li:last-child { border-bottom: none; }
+.pac-datos-lista .etq { color: var(--gris); flex-shrink: 0; }
+.pac-datos-lista .val { color: var(--gris-osc); font-weight: 600; text-align: right; }
+
+/* Línea de tiempo del turno: qué le fue pasando y cuándo. */
+.pac-linea { list-style: none; position: relative; padding-left: 22px; }
+.pac-linea::before {
+    content: ""; position: absolute; left: 5px; top: 6px; bottom: 6px;
+    width: 2px; background: var(--borde);
+}
+.pac-linea li { position: relative; padding: 0 0 18px; }
+.pac-linea li:last-child { padding-bottom: 0; }
+.pac-linea li::before {
+    content: ""; position: absolute; left: -21px; top: 5px;
+    width: 10px; height: 10px; border-radius: 50%;
+    background: var(--azul); border: 2px solid var(--blanco);
+    box-shadow: 0 0 0 2px var(--azul-claro);
+}
+.pac-linea .hito   { font-size: .88rem; color: var(--gris-osc); font-weight: 600; }
+.pac-linea .cuando { font-size: .76rem; color: var(--gris); margin-top: 2px; }
+.pac-linea .detalle { font-size: .82rem; color: var(--gris-med); margin-top: 4px; line-height: 1.5; }
+
+/* ── Reprogramar ──────────────────────────────────────────────── */
+.pac-repro-actual {
+    background: var(--gris-claro); border-radius: var(--radio-sm);
+    padding: 14px 18px; margin-bottom: 20px; font-size: .89rem;
+    color: var(--gris-med);
+}
+.pac-repro-actual strong { color: var(--gris-osc); }
+
+.pac-slots { display: flex; flex-wrap: wrap; gap: 9px; margin-top: 6px; }
+.pac-slot {
+    padding: 10px 16px; border-radius: var(--radio-sm);
+    border: 1.5px solid var(--borde); background: var(--blanco);
+    font-family: inherit; font-size: .88rem; font-weight: 600;
+    color: var(--gris-med); cursor: pointer;
+    transition: border-color .15s, background .15s, color .15s;
+}
+.pac-slot:hover { border-color: var(--azul); color: var(--azul); }
+.pac-slot.elegido {
+    background: var(--azul); border-color: var(--azul); color: #fff;
+    box-shadow: var(--azul-glow);
+}
+.pac-slot-vacio { color: var(--gris); font-size: .88rem; font-style: italic; }
+
+/* ── Responsive ───────────────────────────────────────────────── */
+@media (max-width: 860px) {
+    .pac-detalle-grid { grid-template-columns: 1fr; }
+}
+@media (max-width: 560px) {
+    .pac-saludo h1 { font-size: 1.45rem; }
+    .pac-cita { padding: 18px; }
+    .pac-cita-cab { flex-direction: column; gap: 8px; }
+    .pac-cita-datos { flex-direction: column; gap: 7px; }
+    .pac-pago-aviso { flex-direction: column; align-items: stretch; }
+    .pac-pago-aviso .btn { width: 100%; justify-content: center; }
+    /* Los botones de acción se apilan y ocupan todo el ancho */
+    .pac-cita-acciones { flex-direction: column; align-items: stretch; }
+    .pac-cita-acciones .btn { width: 100%; justify-content: center; }
+    .pac-datos-lista li { flex-direction: column; gap: 3px; }
+    .pac-datos-lista .val { text-align: left; }
+}

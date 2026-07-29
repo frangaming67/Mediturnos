@@ -22,10 +22,21 @@ require_once __DIR__ . '/sistema/modelos/Turno.php';
 // ni siquiera existe.
 verificarSesion();
 
-$rol          = $_SESSION['rol'];
-$modelo       = new Turno($pdo);
-$paginaTitulo = 'Dashboard';
-$breadcrumb   = 'Inicio';
+$rol    = $_SESSION['rol'];
+$modelo = new Turno($pdo);
+
+// El paciente no ve un "Dashboard": ve el resumen de SU cuenta. La
+// palabra importa — nadie que viene a atenderse piensa en tableros.
+// $cssExtra tiene que quedar definido ANTES del navbar, que es quien
+// imprime los <link> del <head>.
+if ($rol === 'paciente') {
+    $paginaTitulo = 'Inicio';
+    $breadcrumb   = 'Mi cuenta';
+    $cssExtra     = ['paciente.css'];
+} else {
+    $paginaTitulo = 'Dashboard';
+    $breadcrumb   = 'Inicio';
+}
 
 // El navbar es común a los dos roles, por eso se incluye una sola vez
 // acá arriba y no dentro de cada dashboard_*.php (evitaría duplicar el
