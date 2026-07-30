@@ -137,6 +137,39 @@ paciente recibiría un correo por cada página que abriera.
 **Verificado:** tres llamadas seguidas con la misma referencia dejan una sola
 notificación.
 
+## Direcciones a las que no se escribe
+
+Los datos de prueba usan `@example.com`. Cada aviso a una de esas direcciones
+viajaba al servidor SMTP, Gmail lo aceptaba, y volvía horas después como un
+**rebote a la casilla del dueño del sistema**.
+
+No es un error de configuración que se pueda corregir: `example.com` y compañía
+están reservados por la [RFC 2606](https://www.rfc-editor.org/info/rfc2606) y
+declaran Null MX ([RFC 7505](https://www.rfc-editor.org/info/rfc7505));
+`.test`, `.invalid` y `.localhost` los reserva la RFC 6761. Mandarles un mensaje
+es una garantía de rebote.
+
+`MailerSmtp` los descarta **antes de abrir el socket** y deja el motivo en el
+log. Se comprueba también el sufijo (`algo.example.com`, `mi-pc.local`), pero no
+los dominios que sólo se parecen: `x@example.company.com` sí se intenta.
+
+El modo archivo los sigue guardando: ahí el punto es justamente poder leer el
+correo que se habría mandado.
+
+> Esto **no** cubre una dirección con formato válido que simplemente no existe
+> —`laila@gmail.com`—: eso sólo se sabe intentando. Si un aviso no llega, lo
+> primero a revisar es qué correo tiene cargada esa cuenta.
+
+## El buzón de desarrollo perdía correos
+
+`MailerArchivo` nombraba los archivos con la fecha **al segundo** más el
+destinatario. Dos correos a la misma persona dentro del mismo segundo generaban
+el mismo nombre y el segundo pisaba al primero, sin decir nada.
+
+Pasa de verdad: al reservar un turno y que falle el pago salen dos avisos casi
+juntos. Y el síntoma es el peor posible — el sistema da el correo por enviado y
+no está en ninguna parte. Se agregó un sufijo aleatorio al nombre.
+
 ## Por qué los correos se ven "anticuados"
 
 No es descuido. El correo **no es la web**:

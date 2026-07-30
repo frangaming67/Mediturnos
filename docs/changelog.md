@@ -81,6 +81,9 @@ Versionado según [SemVer](https://semver.org/lang/es/).
 - **Al reservar no se verificaba que el horario siguiera ofreciéndose.** Ahora
   se contrasta contra `obtenerSlots()`, que cubre de una vez profesional
   activo, ausencias, horario existente, ocupación y horarios pasados.
+- **Los correos a `@example.com` llenaban de rebotes la casilla del sistema.**
+  Los datos de prueba usan direcciones de dominios reservados que por norma no
+  pueden recibir correo. Ahora se descartan antes de intentar el envío.
 - **El buzón de desarrollo perdía correos.** `MailerArchivo` nombraba los
   archivos con la fecha al segundo más el destinatario: dos correos a la misma
   persona dentro del mismo segundo se pisaban en silencio. Pasa de verdad —al
