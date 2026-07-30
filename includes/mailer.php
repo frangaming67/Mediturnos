@@ -54,9 +54,17 @@ class MailerArchivo implements Mailer
 
     public function enviar(string $para, string $asunto, string $cuerpoHtml): bool
     {
-        // El nombre lleva fecha + destinatario saneado para poder ubicarlo.
+        // El nombre lleva fecha + destinatario saneado para poder ubicarlo,
+        // y un sufijo aleatorio para que sea único.
+        //
+        // El sufijo NO es decoración: sin él, dos correos a la misma
+        // persona dentro del mismo segundo generaban el mismo nombre y el
+        // segundo pisaba al primero sin decir nada. Pasa de verdad —al
+        // reservar y que falle el pago salen dos avisos casi juntos— y el
+        // síntoma es el peor posible: un correo que el sistema da por
+        // enviado y que no está en ninguna parte.
         $slug   = preg_replace('/[^a-zA-Z0-9._-]/', '_', $para);
-        $nombre = date('Ymd_His') . '_' . $slug . '.html';
+        $nombre = date('Ymd_His') . '_' . $slug . '_' . bin2hex(random_bytes(3)) . '.html';
         $ruta   = $this->carpeta . '/' . $nombre;
 
         $encabezado = '<!doctype html><meta charset="utf-8">'

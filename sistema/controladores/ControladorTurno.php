@@ -240,6 +240,32 @@ switch ($accion) {
             exit;
         }
 
+        // ── El horario tiene que ser uno de los que el sistema OFRECE ──
+        // Una sola comprobación que cubre todos los casos a la vez: que el
+        // profesional siga activo, que no esté ausente ese día, que el
+        // horario exista en su agenda, que no esté tomado y que no haya
+        // pasado. Cada uno por separado sería un guard más para olvidarse
+        // de agregar; acá se contrasta contra la misma función que dibuja
+        // las pantallas, así que lo reservable es exactamente lo ofrecido.
+        $ofrecidos = $modelo->obtenerSlots($datos['matricula'], $datos['fecha']);
+        $slotValido = false;
+        foreach ($ofrecidos as $s) {
+            if ($s['hora_full'] === $datos['hora_inicio']
+                && (int) $s['id_consultorio']  === $datos['id_consultorio']
+                && (int) $s['id_especialidad'] === $datos['id_especialidad']) {
+                $slotValido = true;
+                break;
+            }
+        }
+        if (!$slotValido) {
+            $volverA = $_SESSION['rol'] === 'paciente'
+                ? BASE_URL . 'agendar.php?err='
+                : BASE_URL . 'sistema/controladores/ControladorTurno.php?accion=nuevo&err=';
+            header('Location: ' . $volverA
+                . urlencode('Ese horario ya no está disponible. Elegí otro.'));
+            exit;
+        }
+
         // Guard de integridad: no permitir reservar un horario que ya pasó.
         // El formulario y el calendario ya ocultan estos slots (Turno::obtenerSlots),
         // pero un POST tardío o manipulado podría traerlos; sin este control el pago
@@ -273,13 +299,16 @@ switch ($accion) {
             // Generar el pago pendiente y llevar al paciente a la pantalla
             // donde elige pagar ahora (tarjeta) o más tarde.
             try {
-                $idPago = (new Pago($pdo))->crearParaTurno($idTurno, $datos);
+                // Quien dijo "pago ahora" retiene el horario 15 minutos;
+                // quien dijo "más tarde", 48 horas. Ver Pago::MINUTOS_RESERVA.
+                $vaAPagarAhora = ($_POST['pago'] ?? '') === 'tarjeta';
+                $idPago = (new Pago($pdo))->crearParaTurno($idTurno, $datos, $vaAPagarAhora);
 
                 // Se respeta lo que la persona eligió en el resumen. Si
                 // dijo "ahora con tarjeta", va derecho al formulario de
                 // pago: mandarla a una pantalla intermedia a volver a
                 // elegir lo que ya eligió es una fricción sin motivo.
-                $accionPago = ($_POST['pago'] ?? '') === 'tarjeta' ? 'tarjeta' : 'elegir';
+                $accionPago = $vaAPagarAhora ? 'tarjeta' : 'elegir';
 
                 header('Location: ' . BASE_URL . 'sistema/controladores/ControladorPago.php'
                     . '?accion=' . $accionPago . '&id_pago=' . $idPago);

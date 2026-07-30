@@ -9,6 +9,18 @@ Versionado según [SemVer](https://semver.org/lang/es/).
 
 ### Agregado
 
+**Pago y confirmación** — ver [area-paciente.md](area-paciente.md)
+- Dos plazos de retención: 15 minutos si paga con tarjeta ahora, 48 horas si
+  elige pagar más tarde o en recepción
+- Cuenta regresiva en la pantalla de pago, con opción de pedir más tiempo
+- "Pagar más tarde" ahora **hace algo**: antes era sólo un enlace al listado y
+  el plazo original seguía corriendo
+- Pago rechazado: el turno no se cancela, se puede reintentar, y avisa por
+  correo con el plazo que queda
+- Pago aprobado: turno confirmado, **comprobante imprimible con código de
+  reserva** y correo con todos los datos de la consulta
+- El cobro en recepción dispara el mismo aviso que el pago con tarjeta
+
 **Agendar en cuatro pasos** — ver [area-paciente.md](area-paciente.md)
 - Especialidad → Profesional → Día → Horario → Confirmación, cada paso con su
   propia URL: el botón "atrás" funciona y la pantalla anda sin JavaScript
@@ -62,6 +74,18 @@ Versionado según [SemVer](https://semver.org/lang/es/).
   turno sin pagar: con el monto en cero el pago se da por saldado solo y el
   turno se confirma. Ahora sólo se ofrecen —y se aceptan— las coberturas
   propias más el pago particular.
+- **El sistema ofrecía turnos con un médico dado de baja hacía un mes.**
+  `obtenerSlots()` leía los horarios sin mirar `medico.estado`, y los horarios
+  no se borran al dar de baja a alguien. El asistente lo tapaba por casualidad,
+  pero el endpoint AJAX seguía devolviéndolos y un POST a mano reservaba igual.
+- **Al reservar no se verificaba que el horario siguiera ofreciéndose.** Ahora
+  se contrasta contra `obtenerSlots()`, que cubre de una vez profesional
+  activo, ausencias, horario existente, ocupación y horarios pasados.
+- **El buzón de desarrollo perdía correos.** `MailerArchivo` nombraba los
+  archivos con la fecha al segundo más el destinatario: dos correos a la misma
+  persona dentro del mismo segundo se pisaban en silencio. Pasa de verdad —al
+  reservar y que falle el pago salen dos avisos casi juntos— y el síntoma es el
+  peor posible: un correo que el sistema da por enviado y no está en ningún lado.
 - **`navbar.php` pisaba variables de la vista.** Se incluye con `require`, que
   comparte el ámbito: su `$iniciales` (un string) reemplazaba a la función del
   mismo nombre que `agendar.php` usaba para dibujar los avatares, y la página

@@ -19,6 +19,25 @@ class Pago
     /** Horas que tiene el paciente para pagar un turno "para después". */
     private const HORAS_PLAZO = 48;
 
+    /**
+     * Minutos que el horario queda retenido mientras la persona paga.
+     *
+     * Son dos plazos distintos porque son dos situaciones distintas:
+     *
+     *   · "Pago ahora con tarjeta"  → 15 minutos. Es lo que tarda cargar
+     *     una tarjeta. Si alguien abre el checkout y se va, el horario
+     *     tiene que volver a estar disponible enseguida, no dos días
+     *     después.
+     *   · "Pago más tarde o en recepción" → 48 horas. Ahí la persona
+     *     avisó que no va a pagar ahora, y el sistema le reserva el lugar.
+     *
+     * Con un solo plazo largo, cualquiera que abandonara el checkout
+     * dejaba un horario bloqueado dos días sin que nadie pagara. Con uno
+     * solo corto, quien elige pagar en recepción perdía el turno a los
+     * quince minutos.
+     */
+    public const MINUTOS_RESERVA = 15;
+
     private PDO $pdo;
 
     public function __construct(PDO $pdo)
@@ -95,7 +114,7 @@ class Pago
      * (HORAS_PLAZO desde ahora, nunca después del inicio del turno).
      * Retorna el id_pago.
      */
-    public function crearParaTurno(int $idTurno, array $datos): int
+    public function crearParaTurno(int $idTurno, array $datos, bool $pagoInmediato = false): int
     {
         $calc = $this->calcular(
             (int) $datos['id_especialidad'],
@@ -104,8 +123,12 @@ class Pago
         );
 
         // Vencimiento: ahora + plazo, pero nunca pasado el inicio del turno.
+        // Si se pasara, alguien podría presentarse a la consulta sin haber
+        // pagado y con el plazo todavía corriendo.
         $inicioTurno = strtotime($datos['fecha'] . ' ' . $datos['hora_inicio']);
-        $limitePlazo = time() + self::HORAS_PLAZO * 3600;
+        $limitePlazo = $pagoInmediato
+            ? time() + self::MINUTOS_RESERVA * 60
+            : time() + self::HORAS_PLAZO * 3600;
         $vencTs      = min($limitePlazo, $inicioTurno);
         $vencimiento = date('Y-m-d H:i:s', $vencTs);
 
@@ -142,16 +165,25 @@ class Pago
     public function buscarPorId(int $idPago): array|false
     {
         $stmt = $this->pdo->prepare(
+            // Trae también paciente, DNI, consultorio y duración: los
+            // necesitan el comprobante y el correo de confirmación, y
+            // pedirlos aparte serían tres consultas más para armar una
+            // pantalla que ya está haciendo este JOIN.
             "SELECT pg.*, t.fecha, t.hora_inicio, et.descripcion AS estado_turno,
                     t.id_paciente, t.matricula,
                     CONCAT(m.apellido, ', ', m.nombre) AS medico,
-                    e.nombre AS especialidad,
+                    CONCAT(p.apellido, ', ', p.nombre) AS paciente,
+                    p.dni AS paciente_dni,
+                    e.nombre AS especialidad, e.duracion_turno_min,
+                    CONCAT('Cons. ', c.numero, ' - Piso ', c.piso) AS consultorio,
                     os.nombre AS obra_social, pl.nombre_plan AS plan
              FROM pago pg
              JOIN turno t        ON t.id_turno        = pg.id_turno
              JOIN estado_turno et ON et.id_estado     = t.id_estado
              JOIN medico m       ON m.matricula       = t.matricula
+             JOIN paciente p     ON p.id_paciente     = t.id_paciente
              JOIN especialidad e ON e.id_especialidad = t.id_especialidad
+             JOIN consultorio c  ON c.id_consultorio  = t.id_consultorio
              JOIN plan_os pl     ON pl.id_plan        = t.id_plan
              JOIN obra_social os ON os.id_obra_social = pl.id_obra_social
              WHERE pg.id_pago = :id"
@@ -356,6 +388,42 @@ class Pago
         } catch (PDOException $e) {
             error_log('Pago reajustarVencimiento: ' . $e->getMessage());
         }
+    }
+
+    /**
+     * Pasa un pago de la retención corta al plazo largo.
+     *
+     * Lo dispara la persona cuando dice "prefiero pagarlo más tarde": es
+     * un cambio de decisión, no una trampa. Mientras estaba en el
+     * checkout el horario se le retenía 15 minutos; al elegir pagar
+     * después, se le extiende a 48 horas.
+     *
+     * Nunca acorta un plazo ni pasa del inicio del turno, y sólo toca
+     * pagos Pendientes: uno vencido no debe revivir por volver a entrar.
+     */
+    public function extenderPlazo(int $idPago): bool
+    {
+        $pago = $this->buscarPorId($idPago);
+        if (!$pago || $pago['estado'] !== 'Pendiente') {
+            return false;
+        }
+
+        $nuevo = min(
+            time() + self::HORAS_PLAZO * 3600,
+            strtotime($pago['fecha'] . ' ' . $pago['hora_inicio'])
+        );
+
+        // Si el plazo vigente ya es más largo, no se toca.
+        if ($nuevo <= strtotime($pago['fecha_vencimiento'])) {
+            return false;
+        }
+
+        $stmt = $this->pdo->prepare(
+            "UPDATE pago SET fecha_vencimiento = :venc
+             WHERE id_pago = :id AND estado = 'Pendiente'"
+        );
+        $stmt->execute([':venc' => date('Y-m-d H:i:s', $nuevo), ':id' => $idPago]);
+        return $stmt->rowCount() > 0;
     }
 
     /** Anula el pago pendiente de un turno (al cancelarse el turno). */
