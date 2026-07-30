@@ -173,6 +173,101 @@ contempla.
 La casilla de aceptación se valida **también en el servidor**. Sin eso sería una
 casilla decorativa que cualquiera saltea armando el POST a mano.
 
+## Pago y confirmación
+
+### Dos plazos, no uno
+
+| Eligió | Retención | Por qué |
+|---|---|---|
+| **Pago ahora con tarjeta** | **15 minutos** | Es lo que tarda cargar una tarjeta. Si abre el checkout y se va, el horario tiene que volver enseguida |
+| **Pago más tarde / en recepción** | **48 horas** | Avisó que no va a pagar ahora; el sistema le reserva el lugar |
+
+Con un solo plazo largo, cualquiera que abandonara el checkout dejaba un horario
+bloqueado dos días sin que nadie pagara. Con uno solo corto, quien elige pagar en
+recepción perdía el turno a los quince minutos.
+
+La pantalla de pago muestra una **cuenta regresiva** cuando la retención es corta.
+El servidor imprime el tiempo restante, así que sin JavaScript se ve igual: sólo
+deja de descontar. **Quien decide si el plazo venció es el servidor, no el reloj.**
+
+### "Necesito más tiempo"
+
+`Pago::extenderPlazo()` mueve la retención corta al plazo largo. Es un cambio de
+decisión, no una trampa: nunca acorta un plazo ni pasa del inicio del turno, y
+sólo toca pagos `Pendiente` — uno vencido no revive por volver a entrar.
+
+> Antes, "Pagar más tarde" era **sólo un enlace al listado**. Quien lo tocaba se
+> iba creyendo que tenía tiempo mientras el plazo original seguía corriendo.
+
+### Si el pago se rechaza
+
+El turno **no** se cancela: la persona sigue dentro de su ventana y puede
+reintentar con otra tarjeta. Si se cancelara al primer rechazo, quien se equivocó
+en un dígito perdería el horario y tendría que empezar de cero.
+
+Recibe un aviso —en la app y por correo— que dice que el turno sigue reservado,
+hasta cuándo, y ofrece reintentar.
+
+### Si el pago se aprueba
+
+```
+pago Pagado → turno Confirmado → notificación → correo → comprobante
+```
+
+Va derecho al **comprobante**, no al listado: acaba de pagar y lo que quiere ver
+es la constancia de que su turno está.
+
+El cobro en recepción dispara **exactamente el mismo aviso**: para el paciente es
+el mismo hecho, sin importar por dónde entró la plata. Por eso el armado del
+correo está en una función y no escrito dos veces — así no puede pasar que un día
+los dos digan cosas distintas.
+
+### El comprobante es una página, no un PDF
+
+Generar un PDF sin librerías —el proyecto no usa Composer— significa escribir un
+generador entero. Una página con estilos de impresión hace lo mismo: `Ctrl+P` la
+imprime o la guarda como PDF con el propio navegador, y además se puede mostrar
+desde el teléfono en la puerta de la clínica sin descargar nada.
+
+El **código de reserva** va grande y solo, porque es el dato que la persona busca
+cuando abre esto en recepción.
+
+> `@media print` incluye `print-color-adjust: exact`. Sin eso los navegadores
+> omiten los fondos y la cabecera azul sale en blanco — justo lo que identifica
+> al comprobante.
+
+Un comprobante de un pago pendiente no existe: se redirige a pagarlo, que es lo
+que la persona en realidad necesita.
+
+## 🚨 El médico fantasma
+
+Lo destapó una prueba: el sistema ofrecía turnos con un profesional **dado de
+baja hacía un mes**.
+
+`obtenerSlots()` leía `horario_atencion` sin mirar `medico.estado`. Los horarios
+no se borran al dar de baja a alguien —son su historial— así que la consulta los
+encontraba igual y el calendario los mostraba como disponibles.
+
+El asistente de cuatro pasos lo tapaba por casualidad (el paso 2 sí filtra por
+estado), pero el endpoint AJAX seguía devolviendo sus horarios y un POST armado a
+mano reservaba sin problema.
+
+**La corrección va donde corresponde:** `obtenerSlots()` es la fuente de verdad de
+"qué se puede reservar", así que el filtro va ahí y no en cada una de las cuatro
+pantallas que lo consultan.
+
+Y se agregó el guard que faltaba al reservar:
+
+```php
+// El horario pedido tiene que ser uno de los que el sistema OFRECE ahora
+$ofrecidos = $modelo->obtenerSlots($matricula, $fecha);
+```
+
+Una sola comprobación que cubre todo a la vez: profesional activo, sin ausencia,
+horario existente, libre y futuro. Cada uno por separado sería un guard más para
+olvidarse de agregar; contrastando contra la misma función que dibuja las
+pantallas, **lo reservable es exactamente lo ofrecido**.
+
 ## Calificaciones
 
 Lo que hace creíble a una calificación no es el promedio: es **quién puede
