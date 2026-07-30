@@ -154,9 +154,56 @@ class MailerSmtp implements Mailer
         return strncmp(ltrim($respuesta), $codigo, strlen($codigo)) === 0;
     }
 
+    /**
+     * Dominios que por norma NUNCA pueden recibir correo.
+     *
+     * `example.com` y compañía están reservados por la RFC 2606 y
+     * declaran Null MX (RFC 7505); `.test`, `.invalid` y `.localhost`
+     * los reserva la RFC 6761. Mandarles un mensaje no es un error de
+     * configuración: es una garantía de rebote.
+     *
+     * Importa porque los datos de prueba usan justamente esas
+     * direcciones. Cada correo a una de ellas viaja al servidor, se
+     * acepta, y vuelve horas después como un rebote a la casilla del
+     * dueño del sistema. Terminás con la bandeja llena de "No se ha
+     * encontrado la dirección" por cuentas que nunca existieron.
+     */
+    private const DOMINIOS_IMPOSIBLES = [
+        'example.com', 'example.org', 'example.net', 'example.edu',
+        'test', 'invalid', 'localhost', 'local',
+    ];
+
+    /** ¿Esta dirección puede recibir correo, aunque sea en teoría? */
+    private function entregable(string $para): bool
+    {
+        $arroba = strrpos($para, '@');
+        if ($arroba === false) {
+            return false;
+        }
+        $dominio = strtolower(substr($para, $arroba + 1));
+
+        foreach (self::DOMINIOS_IMPOSIBLES as $d) {
+            // Coincidencia exacta o como sufijo: "algo.example.com" y
+            // "mi-pc.local" también son irremediables.
+            if ($dominio === $d || str_ends_with($dominio, '.' . $d)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
     public function enviar(string $para, string $asunto, string $cuerpoHtml): bool
     {
         $this->error = null;
+
+        // Se descarta antes de abrir el socket. Devuelve false, que es la
+        // verdad —no se entregó— y deja constancia en el log.
+        if (!$this->entregable($para)) {
+            $this->error = 'La dirección ' . $para . ' pertenece a un dominio reservado '
+                         . 'que no puede recibir correo. No se intentó el envío.';
+            error_log('MailerSmtp: ' . $this->error);
+            return false;
+        }
 
         $host    = $this->cfg['host'];
         $puerto  = (int) $this->cfg['puerto'];
