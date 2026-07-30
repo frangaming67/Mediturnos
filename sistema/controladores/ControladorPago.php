@@ -13,10 +13,57 @@
 
 require_once __DIR__ . '/../../config/conexion.php';
 require_once __DIR__ . '/../../includes/auth.php';
+require_once __DIR__ . '/../../includes/notificaciones.php';
 require_once __DIR__ . '/../modelos/Pago.php';
 require_once __DIR__ . '/../modelos/Turno.php';
 
 verificarSesion();
+
+/**
+ * Avisa que un turno quedó confirmado y pagado.
+ *
+ * Está en una función porque el mismo aviso sale por dos caminos —pago
+ * con tarjeta y cobro en recepción— y son el mismo hecho para quien lo
+ * recibe: su turno quedó confirmado. Escribirlo dos veces garantizaría
+ * que un día los dos correos digan cosas distintas.
+ */
+function avisarPagoAprobado(PDO $pdo, array $pago, string $referencia): void
+{
+    $fecha = date('d/m/Y', strtotime($pago['fecha']));
+    $hora  = substr($pago['hora_inicio'], 0, 5);
+
+    obtenerNotificador($pdo)->notificarPaciente((int) $pago['id_paciente'], new Aviso(
+        TipoAviso::PAGO_APROBADO,
+        'Turno confirmado',
+        'Tu pago se acreditó y el turno con Dr/a. ' . $pago['medico']
+            . ' del ' . $fecha . ' a las ' . $hora . ' hs quedó confirmado.',
+        'sistema/controladores/ControladorPago.php?accion=comprobante&id_pago=' . (int) $pago['id_pago'],
+        (int) $pago['id_turno'],
+        [
+            'asunto'    => 'Tu turno quedó confirmado',
+            'parrafos'  => ['Recibimos tu pago. Tu turno está confirmado; abajo tenés todos los datos.'],
+            // El código va destacado y solo: es lo que la persona busca
+            // cuando abre el correo en la puerta de la clínica.
+            'destacado' => ['etiqueta' => 'Código de reserva', 'valor' => $referencia],
+            'datos'     => [
+                'Paciente'     => $pago['paciente'] ?? '',
+                'Profesional'  => 'Dr/a. ' . $pago['medico'],
+                'Especialidad' => $pago['especialidad'],
+                'Fecha'        => $fecha,
+                'Hora'         => $hora . ' hs',
+                'Consultorio'  => $pago['consultorio'] ?? '',
+                'Cobertura'    => $pago['obra_social'] . ' — ' . $pago['plan'],
+                'Importe'      => '$' . number_format((float) $pago['monto_total'], 2, ',', '.'),
+                'Medio de pago'=> $pago['metodo'] ?? '',
+            ],
+            'aviso' => 'Llegá 10 minutos antes y traé tu DNI y la credencial de tu obra social. '
+                     . 'Si no vas a poder venir, cancelá con al menos 2 horas de anticipación.',
+            'nota'  => 'Podés ver, reprogramar o cancelar este turno desde tu cuenta.',
+        ],
+        null,
+        'Ver mi comprobante'
+    ));
+}
 
 $modelo = new Pago($pdo);
 $accion = $_GET['accion'] ?? 'index';
@@ -106,19 +153,81 @@ switch ($accion) {
             'anio'    => $_POST['anio']    ?? '',
             'cvv'     => $_POST['cvv']     ?? '',
         ]);
-        //Esto hace que cuando se registre correctamente, el turno asociado pase a confirmado y no quede 
+        //Esto hace que cuando se registre correctamente, el turno asociado pase a confirmado y no quede
         //en reservado
         if ($resultado['ok']) {
             $turnoModelo = new Turno($pdo);
             $turnoModelo->actualizarEstado((int) $pago['id_turno'], 'Confirmado');
 
-            header('Location: ' . $URL . '?accion=index&msg=pagado');
+            // Se relee el pago: recién ahora tiene estado, método y
+            // referencia definitivos, que son justamente los datos del
+            // comprobante y del correo.
+            $pagoFinal = $modelo->buscarPorId((int) $pago['id_pago']);
+            avisarPagoAprobado($pdo, $pagoFinal ?: $pago, $resultado['referencia'] ?? '');
+
+            // Se lo lleva al comprobante, no al listado: acaba de pagar y
+            // lo que quiere ver es la constancia de que su turno está.
+            header('Location: ' . $URL . '?accion=comprobante&id_pago=' . (int) $pago['id_pago'] . '&msg=pagado');
             exit;
         }
+
+        // ── Pago rechazado ───────────────────────────────────────
+        // El turno NO se cancela acá: la persona sigue dentro de su
+        // ventana de retención y puede reintentar con otra tarjeta. Si
+        // se cancelara al primer rechazo, quien se equivocó en un dígito
+        // perdería el horario y tendría que empezar de cero.
+        obtenerNotificador($pdo)->notificarPaciente((int) $pago['id_paciente'], new Aviso(
+            TipoAviso::PAGO_RECHAZADO,
+            'No pudimos procesar tu pago',
+            'El pago del turno con Dr/a. ' . $pago['medico'] . ' del '
+                . date('d/m/Y', strtotime($pago['fecha'])) . ' fue rechazado: '
+                . $resultado['msg'],
+            'sistema/controladores/ControladorPago.php?accion=elegir&id_pago=' . (int) $pago['id_pago'],
+            (int) $pago['id_turno'],
+            [
+                'asunto'   => 'No pudimos procesar tu pago',
+                'parrafos' => [
+                    'Tu turno sigue reservado, pero todavía sin confirmar. '
+                    . 'Podés intentar con otra tarjeta o abonar en recepción.',
+                ],
+                'aviso' => 'Tenés tiempo hasta el '
+                         . date('d/m/Y \a \l\a\s H:i', strtotime($pago['fecha_vencimiento']))
+                         . '. Después de esa hora el horario se libera.',
+            ],
+            null,
+            'Reintentar el pago'
+        ));
 
         header('Location: ' . $URL . '?accion=tarjeta&id_pago=' . (int) $pago['id_pago']
             . '&err=' . urlencode($resultado['msg']));
         exit;
+
+    // ── "Prefiero pagarlo más tarde" ─────────────────────────
+    // Extiende la retención corta del checkout al plazo largo. Es un
+    // cambio de decisión de la persona, no una trampa: mientras estaba
+    // pagando se le retenía el horario 15 minutos; al elegir pagar
+    // después, se le reserva 48 horas.
+    case 'diferir':
+        csrf_verificar();
+        $pago = obtenerPagoSeguro($modelo, $URL);
+        $modelo->extenderPlazo((int) $pago['id_pago']);
+        header('Location: ' . $URL . '?accion=elegir&id_pago=' . (int) $pago['id_pago'] . '&msg=diferido');
+        exit;
+
+    // ── Comprobante del turno ────────────────────────────────
+    case 'comprobante':
+        $pago = obtenerPagoSeguro($modelo, $URL);
+
+        // Un comprobante es la constancia de algo que se pagó. Si el pago
+        // sigue pendiente no hay nada que constar: se lo manda a pagarlo,
+        // que es lo que en realidad necesita.
+        if ($pago['estado'] !== 'Pagado') {
+            header('Location: ' . $URL . '?accion=elegir&id_pago=' . (int) $pago['id_pago']);
+            exit;
+        }
+
+        require __DIR__ . '/../vistas/pagos/comprobante.php';
+        break;
 
     // ── Cobro en recepción (solo staff) ──────────────────────
     case 'recepcion':
@@ -137,6 +246,12 @@ switch ($accion) {
         if ($modelo->pagarEnRecepcion((int) $pago['id_pago'])) {
             $turnoModelo = new Turno($pdo);
             $turnoModelo->actualizarEstado((int) $pago['id_turno'], 'Confirmado');
+
+            // Mismo aviso que con tarjeta: para el paciente es el mismo
+            // hecho —su turno quedó confirmado—, sin importar por dónde
+            // entró la plata.
+            $pagoFinal = $modelo->buscarPorId((int) $pago['id_pago']);
+            avisarPagoAprobado($pdo, $pagoFinal ?: $pago, $pagoFinal['referencia'] ?? '');
 
             header('Location: ' . $volver . $sep . 'msg=pagado');
             exit;
