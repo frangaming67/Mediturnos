@@ -390,12 +390,17 @@ public function reservar(array $datos): int
     public function diasDisponibles(int $matricula, int $idEspecialidad,
                                     string $desde, int $cantidadDias = 28): array
     {
-        // 1) Cuántos turnos entran por día de la semana
+        // 1) Cuántos turnos entran por día de la semana.
+        //    Mismo filtro por estado que obtenerSlots(): un profesional
+        //    dado de baja conserva sus horarios cargados, y sin este JOIN
+        //    el calendario le pintaría días disponibles.
         $stmt = $this->pdo->prepare(
             "SELECT h.dia_semana, h.hora_inicio, h.hora_fin, e.duracion_turno_min
              FROM   horario_atencion h
+             JOIN   medico m       ON m.matricula       = h.matricula
              JOIN   especialidad e ON e.id_especialidad = h.id_especialidad
-             WHERE  h.matricula = :m AND h.id_especialidad = :esp"
+             WHERE  h.matricula = :m AND h.id_especialidad = :esp
+               AND  m.estado = 'activo'"
         );
         $stmt->execute([':m' => $matricula, ':esp' => $idEspecialidad]);
 
@@ -792,6 +797,17 @@ public function reservar(array $datos): int
                  4=>'Jueves',5=>'Viernes',6=>'Sabado',7=>'Domingo'];
         $dia  = $mapa[$num];
 
+        // El JOIN con `medico` y el filtro por estado NO son decorativos:
+        // sin ellos, un profesional dado de baja seguía ofreciendo turnos.
+        // Los horarios de atención no se borran al darlo de baja —son su
+        // historial— así que esta consulta los encontraba igual y el
+        // calendario los mostraba como disponibles. Se detectó con un
+        // médico dado de baja hace un mes que seguía apareciendo con
+        // agenda abierta.
+        //
+        // Este método es la fuente de verdad de "qué se puede reservar":
+        // el control tiene que estar acá y no en cada pantalla que lo
+        // consulta, que son cuatro y crecen.
         $stmt = $this->pdo->prepare(
             "SELECT h.hora_inicio, h.hora_fin,
                     h.id_consultorio, h.id_especialidad,
@@ -799,9 +815,11 @@ public function reservar(array $datos): int
                     e.duracion_turno_min,
                     CONCAT('Cons. ',c.numero,' - Piso ',c.piso) AS consultorio
              FROM   horario_atencion h
-             JOIN   especialidad e ON e.id_especialidad = h.id_especialidad
-             JOIN   consultorio  c ON c.id_consultorio  = h.id_consultorio
-             WHERE  h.matricula = :m AND h.dia_semana = :dia"
+             JOIN   medico       md ON md.matricula      = h.matricula
+             JOIN   especialidad e  ON e.id_especialidad = h.id_especialidad
+             JOIN   consultorio  c  ON c.id_consultorio  = h.id_consultorio
+             WHERE  h.matricula = :m AND h.dia_semana = :dia
+               AND  md.estado = 'activo'"
         );
         $stmt->execute([':m' => $matricula, ':dia' => $dia]);
         $horarios = $stmt->fetchAll();
