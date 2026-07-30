@@ -11,15 +11,34 @@
 // -----------------------------------------------------------------
 $paginaTitulo = 'Pagar con tarjeta';
 $breadcrumb   = '<a href="' . BASE_URL . 'dashboard.php">Inicio</a> / <a href="' . BASE_URL . 'sistema/controladores/ControladorTurno.php?accion=index">Turnos</a> / Pago con tarjeta';
+$cssExtra     = ['paciente.css'];
 require __DIR__ . '/../layouts/navbar.php';
 
 $URL    = BASE_URL . 'sistema/controladores/ControladorPago.php';
 $money  = fn($v) => '$' . number_format((float)$v, 2, ',', '.');
 $anioAc = (int)date('Y');
+
+// Segundos que quedan de retención del horario.
+$restan = strtotime($pago['fecha_vencimiento']) - time();
 ?>
 
 <?php if (!empty($mensaje)): ?>
 <div class="alerta alerta-error"><?= htmlspecialchars($mensaje) ?></div>
+<?php endif; ?>
+
+<?php // La cuenta regresiva se muestra sólo cuando la retención es corta.
+      // Con el plazo largo (48 h) un reloj sería alarmismo inútil; con 15
+      // minutos es información que la persona necesita para decidir si
+      // paga ahora o pide más tiempo.
+      if ($restan > 0 && $restan <= 2 * Pago::MINUTOS_RESERVA * 60): ?>
+<div class="pago-reloj" id="pago-reloj" role="status">
+    <span>
+        Te estamos guardando el horario. Si no completás el pago, se libera para otra persona.
+    </span>
+    <strong id="reloj-cuenta" data-restan="<?= (int) $restan ?>">
+        <?= sprintf('%02d:%02d', intdiv($restan, 60), $restan % 60) ?>
+    </strong>
+</div>
 <?php endif; ?>
 
 <div class="panel panel-md">
@@ -83,13 +102,25 @@ $anioAc = (int)date('Y');
                 <button type="submit" class="btn btn-primario">Pagar <?= $money($pago['monto_total']) ?></button>
                 <a href="<?= $URL ?>?accion=elegir&id_pago=<?= (int)$pago['id_pago'] ?>" class="btn btn-secundario">← Volver</a>
             </div>
-
             <p class="texto-ayuda mt-20">
                 🔒 Pago simulado para pruebas. No se almacena el número completo ni el CVV.<br>
                 Tarjeta de prueba aprobada: <code>4509 9535 6623 3704</code> ·
                 rechazada: cualquiera terminada en <code>0002</code>.
             </p>
         </form>
+
+        <?php // "Necesito más tiempo" va FUERA del formulario de la tarjeta:
+              // es otra acción y no debe arrastrar los datos de la tarjeta
+              // ni disparar su validación de campos requeridos. ?>
+        <?php if ($restan > 0 && $restan <= 2 * Pago::MINUTOS_RESERVA * 60): ?>
+        <form method="POST" action="<?= $URL ?>?accion=diferir">
+            <?php csrf_field(); ?>
+            <input type="hidden" name="id_pago" value="<?= (int)$pago['id_pago'] ?>">
+            <button type="submit" class="btn-link-ver">
+                Necesito más tiempo — guardame el turno 48 horas
+            </button>
+        </form>
+        <?php endif; ?>
     </div>
 </div>
 
@@ -103,6 +134,34 @@ numero.addEventListener('input', () => {
 document.getElementById('cvv').addEventListener('input', e => {
     e.target.value = e.target.value.replace(/\D/g, '').slice(0, 4);
 });
+
+// Cuenta regresiva de la retención del horario.
+// El servidor ya imprimió el tiempo restante, así que sin JavaScript se
+// ve igual: sólo deja de descontar. La cuenta es cosmética — quien
+// decide si el plazo venció es el servidor, no este reloj.
+(function () {
+    const cuenta = document.getElementById('reloj-cuenta');
+    if (!cuenta) return;
+
+    let restan = parseInt(cuenta.dataset.restan, 10);
+    const caja = document.getElementById('pago-reloj');
+
+    const tic = setInterval(() => {
+        restan--;
+        if (restan <= 0) {
+            clearInterval(tic);
+            cuenta.textContent = '00:00';
+            caja.classList.add('vencido');
+            caja.querySelector('span').textContent =
+                'Se venció la reserva del horario. Al intentar pagar te vamos a avisar si todavía está libre.';
+            return;
+        }
+        const m = String(Math.floor(restan / 60)).padStart(2, '0');
+        const s = String(restan % 60).padStart(2, '0');
+        cuenta.textContent = m + ':' + s;
+        if (restan <= 60) caja.classList.add('vencido');
+    }, 1000);
+})();
 </script>
 
 <?php require __DIR__ . '/../layouts/footer.php'; ?>

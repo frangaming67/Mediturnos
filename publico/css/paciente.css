@@ -419,6 +419,94 @@
     font-size: .88rem; color: var(--gris-med); line-height: 1.6;
 }
 
+/* ═══════════════════════════════════════════════════════════════
+   COMPROBANTE
+   ═══════════════════════════════════════════════════════════════ */
+.comprobante {
+    max-width: 640px; background: var(--blanco);
+    border-radius: var(--radio); box-shadow: var(--sombra-md);
+    overflow: hidden;
+}
+.comp-cab {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 14px; padding: 20px 26px;
+    background: var(--azul); color: #fff;
+}
+.comp-marca { display: flex; align-items: center; gap: 11px; font-size: 1.1rem; font-weight: 800; }
+.comp-logo {
+    width: 32px; height: 32px; border-radius: 9px;
+    background: rgba(255,255,255,.2); display: grid; place-items: center;
+    font-size: 1.2rem; line-height: 1;
+}
+.comp-cab .badge { background: rgba(255,255,255,.22); color: #fff; }
+
+/* El código va grande y solo: es lo que la persona busca cuando abre
+   esto en la puerta de la clínica. */
+.comp-codigo {
+    text-align: center; padding: 22px 20px;
+    background: var(--azul-claro); border-bottom: 1px solid var(--borde);
+}
+.comp-codigo span {
+    display: block; font-size: .72rem; letter-spacing: .1em;
+    text-transform: uppercase; color: var(--gris); margin-bottom: 5px;
+}
+.comp-codigo strong {
+    font-size: 1.85rem; font-weight: 800; color: var(--azul-osc);
+    letter-spacing: 2px; font-family: ui-monospace, "Courier New", monospace;
+}
+
+.comp-cuerpo { padding: 24px 26px; }
+.comp-importe { width: 100%; margin-top: 20px; }
+.comp-pago-info { margin-top: 14px; font-size: .84rem; color: var(--gris); line-height: 1.6; }
+
+.comp-instrucciones {
+    margin-top: 20px; padding: 16px 20px;
+    background: var(--gris-claro); border-radius: var(--radio-sm);
+}
+.comp-instrucciones strong { display: block; font-size: .87rem; color: var(--gris-osc); margin-bottom: 8px; }
+.comp-instrucciones ul { margin: 0; padding-left: 18px; }
+.comp-instrucciones li { font-size: .84rem; color: var(--gris-med); line-height: 1.7; }
+
+.comp-pie {
+    padding: 14px 26px; border-top: 1px solid var(--borde);
+    background: var(--gris-claro);
+    font-size: .74rem; color: var(--gris); text-align: center;
+}
+
+/* ── Impresión ────────────────────────────────────────────────
+   Ctrl+P imprime el comprobante o lo guarda como PDF con el propio
+   navegador. Generar un PDF de verdad exigiría escribir un generador
+   entero: el proyecto no usa Composer. Esto hace lo mismo y además se
+   puede mostrar desde el teléfono sin descargar nada. */
+@media print {
+    /* Fuera todo lo que no es el comprobante */
+    .sidebar, .topbar, .no-imprimir, .btn { display: none !important; }
+    body, .layout, .main-wrap, .contenido {
+        margin: 0 !important; padding: 0 !important;
+        background: #fff !important; display: block !important;
+    }
+    .comprobante {
+        max-width: none; box-shadow: none;
+        border: 1px solid #ccc; border-radius: 0;
+    }
+    /* Sin esto los navegadores omiten los fondos y la cabecera azul
+       sale en blanco, que es justo lo que identifica al comprobante. */
+    .comp-cab, .comp-codigo, .comp-instrucciones, .comp-pie {
+        -webkit-print-color-adjust: exact; print-color-adjust: exact;
+    }
+}
+
+/* ── Cuenta regresiva de la retención ─────────────────────────── */
+.pago-reloj {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 14px; flex-wrap: wrap;
+    padding: 13px 18px; margin-bottom: 18px;
+    background: var(--amarillo-claro); border-radius: var(--radio-sm);
+    color: #92400e; font-size: .87rem;
+}
+.pago-reloj strong { font-size: 1.05rem; font-variant-numeric: tabular-nums; }
+.pago-reloj.vencido { background: var(--rojo-claro); color: #991b1b; }
+
 /* ── Responsive ───────────────────────────────────────────────── */
 @media (max-width: 860px) {
     .pac-detalle-grid { grid-template-columns: 1fr; }

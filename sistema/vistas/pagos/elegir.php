@@ -12,6 +12,7 @@
 // -----------------------------------------------------------------
 $paginaTitulo = 'Pago del turno';
 $breadcrumb   = '<a href="' . BASE_URL . 'dashboard.php">Inicio</a> / <a href="' . BASE_URL . 'sistema/controladores/ControladorTurno.php?accion=index">Turnos</a> / Pago';
+$cssExtra     = ['paciente.css'];
 require __DIR__ . '/../layouts/navbar.php';
 
 $URL     = BASE_URL . 'sistema/controladores/ControladorPago.php';
@@ -22,6 +23,14 @@ $pagado  = $pago['estado'] === 'Pagado';
 
 <?php if (!empty($mensaje)): ?>
 <div class="alerta alerta-error"><?= htmlspecialchars($mensaje) ?></div>
+<?php endif; ?>
+
+<?php if (($_GET['msg'] ?? '') === 'diferido'): ?>
+<div class="alerta alerta-exito" role="alert">
+    Listo: te guardamos el turno hasta el
+    <strong><?= date('d/m/Y H:i', strtotime($pago['fecha_vencimiento'])) ?> hs</strong>.
+    Podés pagarlo con tarjeta desde acá o en efectivo en recepción.
+</div>
 <?php endif; ?>
 
 <div class="panel panel-md">
@@ -64,14 +73,28 @@ $pagado  = $pago['estado'] === 'Pagado';
                 (<?= htmlspecialchars($pago['metodo'] ?: '—') ?><?= $pago['referencia'] ? ' · ' . htmlspecialchars($pago['referencia']) : '' ?>).
             </div>
             <div class="form-acciones mt-20">
+                <a href="<?= $URL ?>?accion=comprobante&id_pago=<?= (int)$pago['id_pago'] ?>" class="btn btn-primario">Ver el comprobante</a>
                 <a href="<?= BASE_URL ?>sistema/controladores/ControladorTurno.php?accion=index" class="btn btn-secundario">Volver a turnos</a>
             </div>
 
         <?php else: ?>
+            <?php
+            // Con la retención corta (viene de "pago ahora") el plazo se
+            // mide en minutos y hay que decirlo con esas palabras: "hasta
+            // las 14:37" suena a mucho tiempo cuando faltan 12 minutos.
+            $restan = strtotime($pago['fecha_vencimiento']) - time();
+            $esCorto = $restan > 0 && $restan <= 2 * Pago::MINUTOS_RESERVA * 60;
+            ?>
             <p class="texto-ayuda mt-20">
-                Tenés tiempo de pagar hasta el
-                <strong><?= date('d/m/Y H:i', strtotime($pago['fecha_vencimiento'])) ?> hs</strong>.
-                Si no pagás antes, el turno se cancela automáticamente y se libera el horario.
+                <?php if ($esCorto): ?>
+                    Te estamos guardando el horario por
+                    <strong><?= max(1, (int) round($restan / 60)) ?> minutos</strong> más.
+                    Si no lo abonás, se libera para otra persona.
+                <?php else: ?>
+                    Tenés tiempo de pagar hasta el
+                    <strong><?= date('d/m/Y H:i', strtotime($pago['fecha_vencimiento'])) ?> hs</strong>.
+                    Si no pagás antes, el turno se cancela automáticamente y se libera el horario.
+                <?php endif; ?>
             </p>
 
             <h3 class="pago-pregunta mt-20">¿Cómo querés pagar?</h3>
@@ -82,11 +105,26 @@ $pagado  = $pago['estado'] === 'Pagado';
                    class="pago-opcion pago-opcion--primaria">
                     <span class="pago-opcion-icono">💳</span>
                     <span class="pago-opcion-titulo">Pagar ahora con tarjeta</span>
-                    <span class="pago-opcion-desc">Pago inmediato y seguro. El turno queda pagado al instante.</span>
+                    <span class="pago-opcion-desc">Pago inmediato y seguro. El turno queda confirmado al instante.</span>
                     <span class="pago-opcion-cta">Pagar con tarjeta →</span>
                 </a>
 
-                <!-- Pagar más tarde -->
+                <?php // "Pagar más tarde" ahora HACE algo: extiende la retención
+                      // corta a 48 horas. Antes era sólo un enlace al listado, y
+                      // quien lo tocaba se iba creyendo que tenía tiempo mientras
+                      // el plazo original seguía corriendo. ?>
+                <?php if ($esCorto): ?>
+                <form method="POST" action="<?= $URL ?>?accion=diferir" class="pago-opcion-form">
+                    <?php csrf_field(); ?>
+                    <input type="hidden" name="id_pago" value="<?= (int)$pago['id_pago'] ?>">
+                    <button type="submit" class="pago-opcion">
+                        <span class="pago-opcion-icono">🕒</span>
+                        <span class="pago-opcion-titulo">Pagar más tarde</span>
+                        <span class="pago-opcion-desc">Te guardamos el turno 48 horas para que lo abones con tarjeta o en recepción.</span>
+                        <span class="pago-opcion-cta">Guardarme el turno →</span>
+                    </button>
+                </form>
+                <?php else: ?>
                 <a href="<?= BASE_URL ?>sistema/controladores/ControladorTurno.php?accion=index"
                    class="pago-opcion">
                     <span class="pago-opcion-icono">🕒</span>
@@ -94,6 +132,7 @@ $pagado  = $pago['estado'] === 'Pagado';
                     <span class="pago-opcion-desc">Pagá con tarjeta antes del vencimiento, o en efectivo en recepción.</span>
                     <span class="pago-opcion-cta">Dejar pendiente →</span>
                 </a>
+                <?php endif; ?>
             </div>
 
             <?php if ($esStaff): ?>
