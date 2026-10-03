@@ -507,9 +507,140 @@
 .pago-reloj strong { font-size: 1.05rem; font-variant-numeric: tabular-nums; }
 .pago-reloj.vencido { background: var(--rojo-claro); color: #991b1b; }
 
+/* ═══════════════════════════════════════════════════════════════
+   HISTORIAL CLÍNICO — lado del paciente
+   ═══════════════════════════════════════════════════════════════ */
+
+.hist-filtros {
+    display: grid; gap: 12px; align-items: end;
+    grid-template-columns: minmax(180px, 2fr) repeat(3, minmax(120px, 1fr)) auto;
+    background: var(--blanco); border-radius: var(--radio);
+    box-shadow: var(--sombra); padding: 16px 18px; margin-bottom: 20px;
+}
+
+/* Línea de tiempo: la fecha a la izquierda, el contenido a la derecha,
+   con una guía vertical que los une. Es la forma en que se lee un
+   historial —por cuándo pasó— y no una tabla de filas iguales. */
+.hist-linea { list-style: none; position: relative; }
+.hist-linea::before {
+    content: ""; position: absolute; left: 27px; top: 12px; bottom: 12px;
+    width: 2px; background: var(--borde);
+}
+
+.hist-item { display: flex; gap: 18px; position: relative; margin-bottom: 14px; }
+
+.hist-fecha {
+    flex-shrink: 0; width: 56px; text-align: center; position: relative; z-index: 1;
+    background: var(--gris-claro); border-radius: var(--radio-sm);
+    padding: 8px 4px; height: fit-content;
+    font-size: .68rem; text-transform: uppercase; color: var(--gris); line-height: 1.2;
+}
+.hist-fecha strong { display: block; font-size: 1.25rem; color: var(--gris-osc); font-weight: 800; }
+.hist-fecha small  { display: block; font-size: .62rem; opacity: .75; }
+
+.hist-cuerpo {
+    flex: 1; min-width: 0;
+    background: var(--blanco); border-radius: var(--radio);
+    box-shadow: var(--sombra); padding: 16px 20px;
+    border-left: 3px solid var(--borde);
+}
+/* El color del borde dice de qué se trata sin tener que leer la
+   etiqueta: azul = consulta, verde = estudio con resultado listo. */
+.hist-item--consulta .hist-cuerpo { border-left-color: var(--azul); }
+.hist-item--estudio  .hist-cuerpo { border-left-color: var(--gris2); }
+.hist-item--listo    .hist-cuerpo { border-left-color: var(--verde); }
+
+.hist-cab {
+    display: flex; align-items: flex-start; justify-content: space-between;
+    gap: 12px; flex-wrap: wrap;
+}
+.hist-cab h3 { font-size: 1rem; font-weight: 700; color: var(--gris-osc); line-height: 1.35; }
+.hist-etiqueta {
+    flex-shrink: 0; font-size: .68rem; font-weight: 700;
+    text-transform: uppercase; letter-spacing: .05em;
+    color: var(--gris); background: var(--gris-claro);
+    padding: 3px 9px; border-radius: 99px;
+}
+.hist-meta { font-size: .82rem; color: var(--gris); margin-top: 3px; }
+
+.hist-bloque { margin-top: 12px; }
+.hist-rotulo {
+    display: block; font-size: .68rem; font-weight: 700;
+    text-transform: uppercase; letter-spacing: .06em;
+    color: var(--gris); margin-bottom: 3px;
+}
+.hist-bloque p { font-size: .88rem; color: var(--gris-med); line-height: 1.6; }
+/* Las indicaciones son lo que el paciente TIENE QUE HACER: se destacan
+   sobre el diagnóstico, que es información. */
+.hist-bloque--indicaciones {
+    background: var(--azul-claro); border-radius: var(--radio-sm);
+    padding: 12px 15px;
+}
+.hist-bloque--indicaciones p { color: var(--azul-osc); }
+
+.hist-acciones { display: flex; gap: 9px; flex-wrap: wrap; margin-top: 14px; }
+.hist-pendiente {
+    margin-top: 12px; font-size: .82rem; color: var(--gris); font-style: italic;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   FICHA CLÍNICA — lado del médico
+   ═══════════════════════════════════════════════════════════════ */
+
+.hc-cabecera {
+    display: flex; align-items: flex-start; justify-content: space-between;
+    gap: 16px; flex-wrap: wrap; margin-bottom: 22px;
+}
+.hc-cabecera h1 {
+    font-size: 1.5rem; font-weight: 800; color: var(--gris-osc); letter-spacing: -.6px;
+}
+.hc-cabecera p { color: var(--gris); font-size: .88rem; margin-top: 4px; }
+
+.hc-grid {
+    display: grid; gap: 18px;
+    grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+    align-items: start;
+}
+
+.hc-pedir {
+    display: grid; gap: 10px; align-items: end;
+    grid-template-columns: minmax(110px, 1fr) minmax(140px, 1.6fr) auto;
+    padding-bottom: 16px; margin-bottom: 16px;
+    border-bottom: 1px solid var(--borde);
+}
+
+.hc-estudios { list-style: none; display: flex; flex-direction: column; gap: 12px; }
+.hc-estudios li {
+    display: grid; gap: 8px;
+    grid-template-columns: 1fr auto;
+    padding: 13px 15px; border: 1px solid var(--borde); border-radius: var(--radio-sm);
+}
+.hc-estudio-datos strong { display: block; font-size: .9rem; color: var(--gris-osc); }
+.hc-estudio-datos span   { display: block; font-size: .76rem; color: var(--gris); margin-top: 2px; }
+.hc-estudio-accion {
+    display: flex; align-items: center; gap: 8px; flex-shrink: 0;
+}
+.hc-subir {
+    grid-column: 1 / -1;
+    display: flex; align-items: center; gap: 9px; flex-wrap: wrap;
+    padding-top: 10px; border-top: 1px dashed var(--borde);
+}
+.hc-subir input[type=file] { font-size: .78rem; color: var(--gris); max-width: 100%; }
+
 /* ── Responsive ───────────────────────────────────────────────── */
 @media (max-width: 860px) {
     .pac-detalle-grid { grid-template-columns: 1fr; }
+    .hc-grid { grid-template-columns: 1fr; }
+    .hist-filtros { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 560px) {
+    .hist-filtros { grid-template-columns: 1fr; }
+    .hist-item { gap: 12px; }
+    .hist-linea::before { left: 23px; }
+    .hist-fecha { width: 48px; }
+    .hc-pedir { grid-template-columns: 1fr; }
+    .hc-estudios li { grid-template-columns: 1fr; }
+    .hc-estudio-accion { justify-content: flex-start; }
 }
 @media (max-width: 640px) {
     /* En la barra de pasos quedan sólo los números: los rótulos no

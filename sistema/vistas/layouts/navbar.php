@@ -120,13 +120,17 @@ $fotoSesion = SubidaImagen::url($_SESSION['foto'] ?? null);
             <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
             Mis pagos
         </a>
+        <a href="<?= BASE_URL ?>historial.php" class="nav-link <?= $aqui === 'historial.php' ? 'activo' : '' ?>">
+            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M9 13h6M9 17h4"/></svg>
+            Historial
+        </a>
         <a href="<?= BASE_URL ?>perfil.php" class="nav-link <?= $aqui === 'perfil.php' ? 'activo' : '' ?>">
             <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
             Mi perfil
         </a>
-        <?php // Historial, Recetas y Notificaciones se agregan cuando su
-              // pantalla exista de verdad. Un menú con enlaces que no
-              // llevan a ninguna parte es peor que un menú corto. ?>
+        <?php // Recetas y Notificaciones se agregan cuando su pantalla
+              // exista de verdad. Un menú con enlaces que no llevan a
+              // ninguna parte es peor que un menú corto. ?>
     <?php else: ?>
         <div class="nav-section">General</div>
         <a href="<?= BASE_URL ?>dashboard.php" class="nav-link <?= basename($_SERVER['PHP_SELF']) === 'dashboard.php' ? 'activo' : '' ?>">
