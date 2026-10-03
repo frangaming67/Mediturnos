@@ -17,6 +17,12 @@ que está preparado el paquete de [`publicacion/`](../publicacion/LEEME.md).
 | MariaDB / MySQL | **10.4+** / 5.7+ | Motor InnoDB. Ver la nota de abajo |
 | Apache | 2.4 | Con `AllowOverride All` |
 
+> **⚠️ El hosting gratuito no sirve.** InfinityFree y la mayoría de los gratuitos
+> desactivan procedimientos almacenados, triggers, vistas y claves foráneas. Este
+> proyecto se apoya en los cuatro: sin procedimientos no hay reserva de turnos.
+> Hace falta un plan pago (desde ~2 USD/mes) o un VPS. El detalle, en
+> [publicacion/PONERLA-ONLINE.md](../publicacion/PONERLA-ONLINE.md).
+
 > **Por qué MariaDB 10.4 y no 10.2.** El esquema usa restricciones `CHECK`, y
 > MariaDB las acepta desde 10.2 pero **las ignora en silencio** hasta 10.4. En un
 > servidor viejo las garantías del motor dejan de existir sin un solo mensaje de

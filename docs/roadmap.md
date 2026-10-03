@@ -45,6 +45,7 @@ Ordenada por impacto:
 | Baja | Unificar el collation hacia `unicode_ci` | Todo el esquema usa `utf8mb4_general_ci`, que ordena mal los acentos en castellano. Migrar 26 tablas con claves foráneas entre sí pide la base fuera de servicio y respaldo — ver [historial-clinico.md](historial-clinico.md) |
 | Baja | Campos como array en los formularios viejos | Un POST con `nombre[]=a` hace que `trim()` reciba un array y devuelva un 500. El perfil, el historial y las recetas ya lo cubren; el registro y los ABM no |
 | Baja | CSP estricta | Requiere sacar el JavaScript y los estilos en línea |
+| Media | El despliegue exige un hosting con MySQL completo | Procedimientos, triggers, vistas y claves foráneas. Los planes gratuitos los desactivan, así que no alcanza con "cualquier hosting PHP" — ver [PONERLA-ONLINE.md](../publicacion/PONERLA-ONLINE.md) |
 | Baja | Catálogo de medicamentos abierto | `receta_medicamento.nombre` es texto libre, igual que `estudio.tipo`. Alcanza para prescribir y para contar los más recetados, pero controlar stock pide un catálogo cerrado — ver [recetas.md](recetas.md) |
 
 ---

@@ -96,6 +96,51 @@ comprobalo con `SELECT VERSION();`.
 
 ---
 
+---
+
+## ⚠️ El hosting GRATUITO no sirve para este proyecto
+
+Lo verifiqué antes de que pierdas una tarde. **InfinityFree** —el gratuito más
+recomendado para PHP— desactiva en su plan gratis exactamente las cuatro cosas en
+las que se apoya MediTurnos:
+
+| Lo que bloquea | Qué deja de funcionar acá |
+|---|---|
+| Procedimientos almacenados | `ReservarTurno` y `CancelarTurno`: **la reserva de turnos entera** |
+| Triggers | El registro del historial de cada cambio de estado |
+| Claves foráneas | La integridad entre las 28 tablas |
+| Vistas | `v_turnos_detalle` y las otras cuatro, que usan casi todas las pantallas |
+
+Su recomendación oficial es mover esa lógica al código PHP. **Para este proyecto
+eso sería un retroceso**, no una adaptación: el control de concurrencia en el
+motor —la columna generada más el `UNIQUE`, el `SIGNAL SQLSTATE '45000'` de los
+procedimientos— es justamente uno de los argumentos del trabajo. Moverlo a PHP
+reintroduce la ventana entre el `SELECT` y el `INSERT` que esas garantías
+eliminan.
+
+Lo mismo pasa con la mayoría de los gratuitos. **HelioHost** permite todo esto
+pero con PostgreSQL, y el esquema usa sintaxis de MySQL (columnas generadas con
+`IF()`, `ENUM`, los procedimientos): migrarlo es reescribir las dieciocho
+migraciones.
+
+### Entonces, qué sí
+
+| Opción | Costo | Sirve |
+|---|---|---|
+| **Hosting compartido pago** | ~2-4 USD/mes | ✅ Los planes pagos sí permiten procedimientos, triggers y claves foráneas. Pedí que te confirmen MariaDB **10.4 o superior** |
+| **VPS o plataforma tipo PaaS** | desde gratis con cuenta | ✅ Control total, pero hay que configurar el servidor |
+| **Túnel desde tu PC** | gratis | ✅ Para mostrarlo un rato. No queda publicado |
+
+**Antes de pagar nada, preguntá esto al soporte:**
+
+> ¿El plan permite crear procedimientos almacenados, triggers, vistas y claves
+> foráneas en MySQL? ¿Qué versión de MariaDB corre?
+
+Si la respuesta a lo primero es que no, o la versión es menor a 10.4, no sirve:
+con MariaDB anterior a 10.4 las restricciones `CHECK` se aceptan y **se ignoran en
+silencio**, así que las garantías del motor dejan de existir sin un solo mensaje
+de error.
+
 ## Las cuentas de la demo
 
 | Usuario | Rol | Contraseña |
