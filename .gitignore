@@ -19,6 +19,13 @@ almacenamiento/mails/*.html
 publico/img/perfiles/*
 !publico/img/perfiles/.gitkeep
 
+# ── Resultados de estudios médicos ───────────────────────────
+# Información de salud de pacientes. Nunca puede llegar al
+# repositorio: un clon del proyecto no debe traer análisis de nadie.
+almacenamiento/estudios/*
+!almacenamiento/estudios/.gitkeep
+!almacenamiento/estudios/.htaccess
+
 # ── Herramientas de desarrollo local ─────────────────────────
 # Configuración del asistente de código: es del entorno de cada
 # desarrollador, no del proyecto.
