@@ -1,0 +1,24 @@
+# -----------------------------------------------------------------
+# Esta carpeta NO se sirve por la web.
+#
+# Sus archivos se usan con `require` desde los puntos de entrada; nadie
+# tiene que poder pedirlos por URL. Sin este archivo, en un servidor
+# público quedan descargables: el esquema completo de la base, los
+# guiones de prueba con sus cuentas, el código de los modelos.
+#
+# Los .php igual no se verían en texto mientras PHP funcione —el
+# servidor los ejecuta—, pero eso depende de que PHP funcione. Un módulo
+# caído o mal configurado y el servidor entrega el archivo tal cual, con
+# las credenciales adentro. Esta barrera no depende de eso.
+#
+# Las dos sintaxis: la primera es la de Apache 2.4, la segunda la de 2.2.
+# Un hosting compartido puede tener cualquiera de las dos, y la
+# equivocada se ignora en silencio — o sea, sin protección y sin aviso.
+# -----------------------------------------------------------------
+<IfModule mod_authz_core.c>
+    Require all denied
+</IfModule>
+<IfModule !mod_authz_core.c>
+    Order deny,allow
+    Deny from all
+</IfModule>
