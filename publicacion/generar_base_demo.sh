@@ -49,6 +49,22 @@ SALIDA="$RAIZ/publicacion/mediturnos_demo.sql"
 # final sobre lo que eso implica.
 CLAVE_DEMO='Demo.2026'
 
+# ── La cuenta de administración lleva la suya ────────────────
+# demo.paciente y demo.medico sólo pueden tocar lo suyo; un
+# administrador puede dar de baja profesionales, cambiar descuentos y
+# borrar usuarios. Publicar las tres con la misma contraseña conocida
+# es dejar que cualquiera que reciba el enlace rompa la demostración.
+#
+# Se genera al azar en cada corrida y se imprime al final: elegirla a
+# mano produce patrones predecibles. Sin caracteres ambiguos (l/1/I,
+# O/0) para poder dictarla por teléfono sin preguntar "¿ele o uno?".
+CLAVE_ADMIN="$($PHP -r '
+    $abc = "abcdefghijkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+    $p = "";
+    for ($i = 0; $i < 14; $i++) { $p .= $abc[random_int(0, strlen($abc) - 1)]; }
+    echo "Adm-" . substr($p,0,5) . "-" . substr($p,5,5) . "-" . substr($p,10,4);
+')"
+
 CATALOGOS="rol permiso rol_permiso estado_turno especialidad obra_social plan_os consultorio medico medico_especialidad horario_atencion descuento_os_medico"
 
 echo "Generando la base de demostración…"
@@ -129,6 +145,7 @@ echo "  · catálogos: $(echo $CATALOGOS | wc -w) tablas"
 # entrar y que el error aparece recién al probar en el servidor.
 echo "  · cuentas de demostración (hashes con password_hash)"
 HASH="$($PHP -r 'echo password_hash($argv[1], PASSWORD_DEFAULT);' "$CLAVE_DEMO")"
+HASH_ADMIN="$($PHP -r 'echo password_hash($argv[1], PASSWORD_DEFAULT);' "$CLAVE_ADMIN")"
 
 # La matrícula y el id de especialidad salen de la base, no se escriben
 # fijos: si el catálogo cambia, el archivo generado sigue siendo válido.
@@ -173,18 +190,22 @@ cat >> "$SALIDA" <<SQL
 -- ══════════════════════════════════════════════════════════
 -- CUENTAS DE DEMOSTRACIÓN
 -- ══════════════════════════════════════════════════════════
--- Tres cuentas, una por rol, con la contraseña: $CLAVE_DEMO
+-- Tres cuentas, una por rol.
+--   demo.paciente y demo.medico → $CLAVE_DEMO
+--   demo.admin                  → $CLAVE_ADMIN
 --
 --   demo.admin      → administración: ABM, descuentos, usuarios
 --   demo.medico     → la agenda y la ficha clínica del Dr/a. de la
 --                     matrícula $MAT (que ya viene en el catálogo)
 --   demo.paciente   → el Área del Paciente completa
 --
--- ⚠️ La contraseña es pública A PROPÓSITO: es un sitio de demostración y
--- la gente tiene que poder entrar. Eso significa que cualquiera que
--- entre con demo.admin puede borrar y modificar todo. Para una demo
--- abierta es aceptable; si el sitio tiene que resistir, hay que cambiar
--- la contraseña del administrador y publicar sólo las otras dos.
+-- ⚠️ Las dos primeras son públicas A PROPÓSITO: es un sitio de
+-- demostración y la gente tiene que poder entrar.
+--
+-- La de demo.admin NO: se genera al azar en cada corrida y la imprime
+-- el generador. Un administrador puede dar de baja profesionales,
+-- cambiar descuentos y borrar usuarios — con la contraseña publicada,
+-- cualquiera que reciba el enlace deja la demostración inservible.
 --
 -- Los hashes son de password_hash() con PASSWORD_DEFAULT, el mismo que
 -- usa el registro del sistema.
@@ -199,7 +220,7 @@ FROM   medico m WHERE m.matricula = $MAT;
 
 INSERT INTO usuario (nombre, apellido, usuario, email, contrasenia, id_rol, estado)
 VALUES ('Demo', 'Administración', 'demo.admin',
-        'demo.admin@ejemplo-mediturnos.ar', '$HASH', $ID_ROL_ADMIN, 'activo');
+        'demo.admin@ejemplo-mediturnos.ar', '$HASH_ADMIN', $ID_ROL_ADMIN, 'activo');
 
 -- El paciente necesita ficha en \`paciente\` ADEMÁS de cuenta en
 -- \`usuario\`: son dos cosas distintas en este modelo (recepción carga
@@ -371,4 +392,8 @@ LINEAS="$(wc -l < "$SALIDA")"
 PESO="$(du -h "$SALIDA" | cut -f1)"
 echo
 echo "Listo: publicacion/mediturnos_demo.sql ($LINEAS líneas, $PESO)"
-echo "Contraseña de las tres cuentas: $CLAVE_DEMO"
+echo "demo.paciente y demo.medico : $CLAVE_DEMO"
+echo "demo.admin                  : $CLAVE_ADMIN"
+echo
+echo "Anotá la del administrador: se genera distinta en cada corrida y"
+echo "no queda en ningún lado más que en este .sql, como hash."

@@ -90,7 +90,7 @@ CREATE TABLE `consulta` (
   KEY `fk_consulta_medico` (`matricula`),
   CONSTRAINT `fk_consulta_medico` FOREIGN KEY (`matricula`) REFERENCES `medico` (`matricula`),
   CONSTRAINT `fk_consulta_turno` FOREIGN KEY (`id_turno`) REFERENCES `turno` (`id_turno`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=14 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=18 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
@@ -155,7 +155,7 @@ CREATE TABLE `estudio` (
   CONSTRAINT `fk_estudio_medico` FOREIGN KEY (`matricula`) REFERENCES `medico` (`matricula`),
   CONSTRAINT `fk_estudio_paciente` FOREIGN KEY (`id_paciente`) REFERENCES `paciente` (`id_paciente`) ON DELETE CASCADE,
   CONSTRAINT `fk_estudio_turno` FOREIGN KEY (`id_turno`) REFERENCES `turno` (`id_turno`) ON DELETE SET NULL
-) ENGINE=InnoDB AUTO_INCREMENT=628 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=1042 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
@@ -169,7 +169,7 @@ CREATE TABLE `historial_turno` (
   PRIMARY KEY (`id_hist`),
   KEY `id_turno` (`id_turno`),
   CONSTRAINT `historial_turno_ibfk_1` FOREIGN KEY (`id_turno`) REFERENCES `turno` (`id_turno`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=222 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=238 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
@@ -201,7 +201,7 @@ CREATE TABLE `intento_login` (
   PRIMARY KEY (`id_intento`),
   KEY `idx_intento_busqueda` (`identificador`,`ip`,`fecha`),
   KEY `idx_intento_fecha` (`fecha`)
-) ENGINE=InnoDB AUTO_INCREMENT=61 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=63 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
@@ -244,7 +244,7 @@ CREATE TABLE `notificacion` (
   KEY `idx_notif_usuario` (`id_usuario`,`creada_en`),
   KEY `idx_notif_sin_leer` (`id_usuario`,`leida_en`),
   CONSTRAINT `fk_notificacion_usuario` FOREIGN KEY (`id_usuario`) REFERENCES `usuario` (`id_usuario`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=244 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=283 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
@@ -307,7 +307,7 @@ CREATE TABLE `pago` (
   KEY `idx_pago_estado` (`estado`),
   KEY `idx_pago_venc` (`fecha_vencimiento`),
   CONSTRAINT `pago_ibfk_1` FOREIGN KEY (`id_turno`) REFERENCES `turno` (`id_turno`)
-) ENGINE=InnoDB AUTO_INCREMENT=74 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=79 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
@@ -324,7 +324,7 @@ CREATE TABLE `password_reset` (
   KEY `idx_reset_usuario` (`id_usuario`),
   KEY `idx_reset_expira` (`expira_en`),
   CONSTRAINT `fk_reset_usuario` FOREIGN KEY (`id_usuario`) REFERENCES `usuario` (`id_usuario`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=10 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
@@ -371,7 +371,7 @@ CREATE TABLE `receta` (
   CONSTRAINT `fk_receta_paciente` FOREIGN KEY (`id_paciente`) REFERENCES `paciente` (`id_paciente`) ON DELETE CASCADE,
   CONSTRAINT `fk_receta_turno` FOREIGN KEY (`id_turno`) REFERENCES `turno` (`id_turno`) ON DELETE SET NULL,
   CONSTRAINT `chk_receta_vigencia` CHECK (`vence_el` >= `emitida_el`)
-) ENGINE=InnoDB AUTO_INCREMENT=99 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=113 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
@@ -388,7 +388,7 @@ CREATE TABLE `receta_medicamento` (
   KEY `idx_item_receta` (`id_receta`),
   CONSTRAINT `fk_item_receta` FOREIGN KEY (`id_receta`) REFERENCES `receta` (`id_receta`) ON DELETE CASCADE,
   CONSTRAINT `chk_item_cantidad` CHECK (`cantidad` > 0)
-) ENGINE=InnoDB AUTO_INCREMENT=178 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=204 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
@@ -415,7 +415,7 @@ CREATE TABLE `renovacion_receta` (
   CONSTRAINT `fk_renov_nueva` FOREIGN KEY (`id_receta_nueva`) REFERENCES `receta` (`id_receta`) ON DELETE SET NULL,
   CONSTRAINT `fk_renov_paciente` FOREIGN KEY (`id_paciente`) REFERENCES `paciente` (`id_paciente`) ON DELETE CASCADE,
   CONSTRAINT `fk_renov_receta` FOREIGN KEY (`id_receta`) REFERENCES `receta` (`id_receta`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=68 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=78 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
@@ -471,7 +471,7 @@ CREATE TABLE `turno` (
   CONSTRAINT `turno_ibfk_3` FOREIGN KEY (`id_especialidad`) REFERENCES `especialidad` (`id_especialidad`) ON UPDATE CASCADE,
   CONSTRAINT `turno_ibfk_4` FOREIGN KEY (`id_consultorio`) REFERENCES `consultorio` (`id_consultorio`) ON UPDATE CASCADE,
   CONSTRAINT `turno_ibfk_5` FOREIGN KEY (`id_plan`) REFERENCES `plan_os` (`id_plan`) ON UPDATE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=133 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=151 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 /*!50003 SET @saved_cs_client      = @@character_set_client */ ;
 /*!50003 SET @saved_cs_results     = @@character_set_results */ ;
@@ -951,18 +951,22 @@ UNLOCK TABLES;
 -- ══════════════════════════════════════════════════════════
 -- CUENTAS DE DEMOSTRACIÓN
 -- ══════════════════════════════════════════════════════════
--- Tres cuentas, una por rol, con la contraseña: Demo.2026
+-- Tres cuentas, una por rol.
+--   demo.paciente y demo.medico → Demo.2026
+--   demo.admin                  → Adm-iZgNt-j7SW4-Y33b
 --
 --   demo.admin      → administración: ABM, descuentos, usuarios
 --   demo.medico     → la agenda y la ficha clínica del Dr/a. de la
 --                     matrícula 10001 (que ya viene en el catálogo)
 --   demo.paciente   → el Área del Paciente completa
 --
--- ⚠️ La contraseña es pública A PROPÓSITO: es un sitio de demostración y
--- la gente tiene que poder entrar. Eso significa que cualquiera que
--- entre con demo.admin puede borrar y modificar todo. Para una demo
--- abierta es aceptable; si el sitio tiene que resistir, hay que cambiar
--- la contraseña del administrador y publicar sólo las otras dos.
+-- ⚠️ Las dos primeras son públicas A PROPÓSITO: es un sitio de
+-- demostración y la gente tiene que poder entrar.
+--
+-- La de demo.admin NO: se genera al azar en cada corrida y la imprime
+-- el generador. Un administrador puede dar de baja profesionales,
+-- cambiar descuentos y borrar usuarios — con la contraseña publicada,
+-- cualquiera que reciba el enlace deja la demostración inservible.
 --
 -- Los hashes son de password_hash() con PASSWORD_DEFAULT, el mismo que
 -- usa el registro del sistema.
@@ -972,12 +976,12 @@ UNLOCK TABLES;
 -- agenda no aparece vacía.
 INSERT INTO usuario (nombre, apellido, usuario, email, contrasenia, id_rol, matricula, estado)
 SELECT m.nombre, m.apellido, 'demo.medico', 'demo.medico@ejemplo-mediturnos.ar',
-       '$2y$10$qjF9SqAxwVUcWV6YJAIVuevcbMO7DagLa43hxKXxvneissyPOCmeu', 4, m.matricula, 'activo'
+       '$2y$10$Dfd.QReCHaPxHswnyZbOROvngp/I58WxGWe6mbGiVIs46UYLVgiuK', 4, m.matricula, 'activo'
 FROM   medico m WHERE m.matricula = 10001;
 
 INSERT INTO usuario (nombre, apellido, usuario, email, contrasenia, id_rol, estado)
 VALUES ('Demo', 'Administración', 'demo.admin',
-        'demo.admin@ejemplo-mediturnos.ar', '$2y$10$qjF9SqAxwVUcWV6YJAIVuevcbMO7DagLa43hxKXxvneissyPOCmeu', 1, 'activo');
+        'demo.admin@ejemplo-mediturnos.ar', '$2y$10$GoHPQ1ghuXZTbOA9drT1zuDuL3x0/f4ByPvW7zSNTXvkPO/u.m3fa', 1, 'activo');
 
 -- El paciente necesita ficha en `paciente` ADEMÁS de cuenta en
 -- `usuario`: son dos cosas distintas en este modelo (recepción carga
@@ -990,7 +994,7 @@ SET @pac = LAST_INSERT_ID();
 
 INSERT INTO usuario (nombre, apellido, usuario, email, contrasenia, id_rol, id_paciente, estado)
 VALUES ('Demo', 'Paciente', 'demo.paciente',
-        'demo.paciente@ejemplo-mediturnos.ar', '$2y$10$qjF9SqAxwVUcWV6YJAIVuevcbMO7DagLa43hxKXxvneissyPOCmeu', 3, @pac, 'activo');
+        'demo.paciente@ejemplo-mediturnos.ar', '$2y$10$Dfd.QReCHaPxHswnyZbOROvngp/I58WxGWe6mbGiVIs46UYLVgiuK', 3, @pac, 'activo');
 
 -- Cobertura: un plan de obra social de verdad, con su número de
 -- afiliado. Los planes "Particular" los puede usar cualquiera sin estar
@@ -999,7 +1003,7 @@ VALUES ('Demo', 'Paciente', 'demo.paciente',
 -- descuento aplicado en el resumen de la reserva, que es la mitad de la
 -- lógica de precios del sistema.
 INSERT INTO paciente_plan (id_paciente, id_plan, nro_afiliado, fecha_alta)
-VALUES (@pac, 1, '157072825', CURDATE());
+VALUES (@pac, 1, '161245225', CURDATE());
 
 
 -- ══════════════════════════════════════════════════════════
