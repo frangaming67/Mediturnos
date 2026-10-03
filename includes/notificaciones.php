@@ -78,8 +78,10 @@ final class TipoAviso
     public const PAGO_POR_VENCER     = 'pago_por_vencer';
 
     // Clínico
+    public const ESTUDIO_PEDIDO      = 'estudio_pedido';
     public const RESULTADOS_LISTOS   = 'resultados_listos';
     public const RECETA_NUEVA        = 'receta_nueva';
+    public const RECETA_ANULADA      = 'receta_anulada';
     public const REFILL_SOLICITADO   = 'refill_solicitado';
     public const REFILL_APROBADO     = 'refill_aprobado';
     public const REFILL_RECHAZADO    = 'refill_rechazado';
@@ -108,8 +110,17 @@ final class TipoAviso
         self::PAGO_RECHAZADO     => ['icono' => 'tarjeta',    'color' => 'rojo',     'email' => true],
         self::PAGO_POR_VENCER    => ['icono' => 'reloj',      'color' => 'amarillo', 'email' => true],
 
+        // Pedir un estudio tiene su propio tipo. Hasta la etapa 5 reusaba
+        // RECETA_NUEVA, que funcionaba sólo porque todavía no existían
+        // las recetas: en cuanto existieron, el paciente veía "te
+        // pidieron un estudio" con el icono de una receta, y no había
+        // forma de distinguir los dos avisos en el listado.
+        self::ESTUDIO_PEDIDO     => ['icono' => 'documento',  'color' => 'azul',     'email' => true],
         self::RESULTADOS_LISTOS  => ['icono' => 'documento',  'color' => 'verde',    'email' => true],
         self::RECETA_NUEVA       => ['icono' => 'receta',     'color' => 'azul',     'email' => true],
+        // Que te anulen una receta es de las pocas cosas que hay que
+        // saber ANTES de ir a la farmacia, así que va por correo.
+        self::RECETA_ANULADA     => ['icono' => 'receta',     'color' => 'rojo',     'email' => true],
         self::REFILL_SOLICITADO  => ['icono' => 'receta',     'color' => 'amarillo', 'email' => true],
         self::REFILL_APROBADO    => ['icono' => 'receta',     'color' => 'verde',    'email' => true],
         self::REFILL_RECHAZADO   => ['icono' => 'receta',     'color' => 'rojo',     'email' => true],

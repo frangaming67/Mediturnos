@@ -213,6 +213,58 @@ $yaRealizado = $turno['estado'] === 'Realizado';
             <?php endif; ?>
         </div>
     </div>
+
+    <!-- ══════════ Recetas ══════════ -->
+    <?php // Se muestran las que emitió ESTE profesional a este paciente.
+          // La prescripción se carga en su propia pantalla y no en un
+          // tercer formulario acá: una receta son varios medicamentos con
+          // su dosis cada uno, y meterlo en esta columna haría la ficha
+          // inmanejable. ?>
+    <div class="panel">
+        <div class="panel-header">
+            <span class="panel-titulo">Recetas</span>
+            <?php if ($yaRealizado): ?>
+            <a href="<?= BASE_URL ?>sistema/controladores/ControladorReceta.php?accion=nueva&turno=<?= (int) $turno['id_turno'] ?>"
+               class="btn btn-primario btn-sm">Emitir receta</a>
+            <?php endif; ?>
+        </div>
+        <div class="panel-body">
+            <?php if (!$yaRealizado): ?>
+                <p class="form-hint">
+                    Vas a poder emitir una receta cuando marques el turno como atendido.
+                </p>
+            <?php endif; ?>
+
+            <?php if (!$recetas): ?>
+                <p class="form-hint">Todavía no le emitiste ninguna receta a este paciente.</p>
+            <?php else: ?>
+            <ul class="hc-estudios">
+                <?php foreach ($recetas as $rp): ?>
+                <li>
+                    <div class="hc-estudio-datos">
+                        <strong><?= htmlspecialchars($rp['medicamentos'] ?? '—') ?></strong>
+                        <span>
+                            <?= htmlspecialchars(date('d/m/Y', strtotime($rp['emitida_el']))) ?>
+                            · <?= (int) $rp['items'] ?> medicamento<?= (int) $rp['items'] === 1 ? '' : 's' ?>
+                            <?php if ($rp['situacion'] === 'Vigente'): ?>
+                                · vence el <?= htmlspecialchars(date('d/m/Y', strtotime($rp['vence_el']))) ?>
+                            <?php endif; ?>
+                        </span>
+                    </div>
+                    <div class="hc-estudio-accion">
+                        <span class="badge badge-<?= $rp['situacion'] === 'Vigente' ? 'activo'
+                            : ($rp['situacion'] === 'Anulada' ? 'cancelado' : 'ausente') ?>">
+                            <?= htmlspecialchars($rp['situacion']) ?>
+                        </span>
+                        <a href="<?= BASE_URL ?>sistema/controladores/ControladorReceta.php?accion=ver&id=<?= (int) $rp['id_receta'] ?>"
+                           class="btn btn-secundario btn-sm">Ver</a>
+                    </div>
+                </li>
+                <?php endforeach; ?>
+            </ul>
+            <?php endif; ?>
+        </div>
+    </div>
 </div>
 
 <?php require __DIR__ . '/../layouts/footer.php'; ?>

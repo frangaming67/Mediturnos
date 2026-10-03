@@ -124,11 +124,15 @@ $fotoSesion = SubidaImagen::url($_SESSION['foto'] ?? null);
             <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M9 13h6M9 17h4"/></svg>
             Historial
         </a>
+        <a href="<?= BASE_URL ?>recetas.php" class="nav-link <?= $aqui === 'recetas.php' ? 'activo' : '' ?>">
+            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M9 15h6M12 12v6"/></svg>
+            Mis recetas
+        </a>
         <a href="<?= BASE_URL ?>perfil.php" class="nav-link <?= $aqui === 'perfil.php' ? 'activo' : '' ?>">
             <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
             Mi perfil
         </a>
-        <?php // Recetas y Notificaciones se agregan cuando su pantalla
+        <?php // El centro de notificaciones se agrega cuando su pantalla
               // exista de verdad. Un menú con enlaces que no llevan a
               // ninguna parte es peor que un menú corto. ?>
     <?php else: ?>
@@ -147,6 +151,23 @@ $fotoSesion = SubidaImagen::url($_SESSION['foto'] ?? null);
             <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
             Pagos
         </a>
+
+        <?php if ($rolActual === 'medico'): ?>
+        <?php // Sólo el médico: los pedidos de renovación los responde el
+              // profesional que firmó la receta, así que para recepción y
+              // administración este enlace llevaría a una bandeja que
+              // siempre está vacía.
+              //
+              // Va sin el contador de pendientes a propósito. Mostrarlo
+              // obligaría a consultar la base DESDE EL LAYOUT, o sea en
+              // cada página del sistema, para un número que sólo importa
+              // en una. El contador va en el panel del médico, que es
+              // donde empieza su jornada. ?>
+        <a href="<?= BASE_URL ?>sistema/controladores/ControladorReceta.php?accion=renovaciones" class="nav-link <?= (basename($_SERVER['PHP_SELF']) === 'ControladorReceta.php') ? 'activo' : '' ?>">
+            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 3v6h-6"/></svg>
+            Renovaciones
+        </a>
+        <?php endif; ?>
 
         <?php if (in_array($rolActual, ['admin','recepcionista'])): ?>
         <div class="nav-section">Gestión</div>

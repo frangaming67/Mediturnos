@@ -20,6 +20,12 @@
 *.json text eol=lf
 *.txt  text eol=lf
 
+# Los guiones de shell necesitan LF o no arrancan: con CRLF, el `\r`
+# queda pegado al final de la línea del shebang y el sistema busca un
+# intérprete llamado "bash\r", que no existe. Sin esta línea, Git los
+# convertía a CRLF en cada checkout bajo Windows.
+*.sh   text eol=lf
+
 # Los .bat de Windows necesitan CRLF sí o sí
 *.bat  text eol=crlf
 

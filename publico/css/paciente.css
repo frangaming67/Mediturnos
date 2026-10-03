@@ -665,3 +665,158 @@
     .pac-datos-lista li { flex-direction: column; gap: 3px; }
     .pac-datos-lista .val { text-align: left; }
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   RECETAS
+   ═══════════════════════════════════════════════════════════════ */
+
+.rec-lista { list-style: none; display: flex; flex-direction: column; gap: 14px; }
+
+.rec-item {
+    background: var(--blanco); border-radius: var(--radio);
+    box-shadow: var(--sombra); padding: 17px 20px;
+    border-left: 3px solid var(--borde);
+}
+/* El borde dice el estado sin tener que leer la etiqueta. Es la misma
+   convención que la línea de tiempo del historial. */
+.rec-item--vigente { border-left-color: var(--verde); }
+.rec-item--vencida { border-left-color: var(--amarillo); }
+.rec-item--anulada { border-left-color: var(--rojo); }
+
+.rec-cab {
+    display: flex; align-items: flex-start; justify-content: space-between;
+    gap: 12px; flex-wrap: wrap;
+}
+.rec-cab h3 {
+    font-size: 1rem; font-weight: 700; color: var(--gris-osc); line-height: 1.4;
+}
+.rec-meta     { font-size: .82rem; color: var(--gris); margin-top: 3px; }
+.rec-diag     { font-size: .87rem; color: var(--gris-med); margin-top: 9px; }
+.rec-vigencia { font-size: .82rem; color: var(--gris); margin-top: 7px; }
+.rec-vigencia strong { color: var(--amarillo); }
+
+.rec-acciones {
+    display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+    margin-top: 14px; padding-top: 13px; border-top: 1px solid var(--borde);
+}
+.rec-nota {
+    font-size: .8rem; color: var(--gris); font-style: italic;
+    line-height: 1.5; flex: 1; min-width: 180px;
+}
+
+/* Pedir la renovación: el motivo y el botón en una línea, porque es una
+   acción de un solo paso y abrir una pantalla aparte para un campo
+   opcional sería un trámite de más. */
+.rec-renovar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; flex: 1; }
+.rec-renovar .form-control { flex: 1; min-width: 160px; }
+
+.rec-resolver {
+    margin-top: 14px; padding-top: 13px; border-top: 1px solid var(--borde);
+    display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap;
+}
+.rec-resolver .form-group { flex: 1; min-width: 220px; }
+
+.rec-pedidos { list-style: none; display: flex; flex-direction: column; gap: 10px; }
+.rec-pedidos li {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 12px; flex-wrap: wrap;
+    padding: 12px 15px; border: 1px solid var(--borde); border-radius: var(--radio-sm);
+}
+.rec-pedidos strong { display: block; font-size: .89rem; color: var(--gris-osc); }
+.rec-pedidos span   { font-size: .79rem; color: var(--gris); }
+.rec-pedido-fin { display: flex; align-items: center; gap: 9px; flex-shrink: 0; }
+
+/* ── Renglones del formulario de emisión ──────────────────────── */
+/* Una grilla por renglón: medicamento y presentación arriba, la pauta
+   abajo. En el teléfono se apila sola. */
+.rec-renglon {
+    display: grid; gap: 10px;
+    grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) minmax(0, 1fr)
+                           minmax(0, 1fr) minmax(0, 1fr) 90px;
+    padding: 13px 15px; margin-bottom: 11px;
+    border: 1px solid var(--borde); border-radius: var(--radio-sm);
+    background: var(--gris-claro);
+}
+.rec-renglon .form-control { background: var(--blanco); }
+
+/* ── El documento ─────────────────────────────────────────────── */
+.rec-doc { max-width: 720px; margin-bottom: 18px; }
+.rec-doc .comp-cab strong { display: block; font-size: 1.1rem; font-weight: 800; }
+.rec-doc .comp-cab span   { font-size: .8rem; opacity: .85; }
+
+.rec-doc-estado {
+    flex-shrink: 0; font-size: .72rem; font-weight: 700;
+    text-transform: uppercase; letter-spacing: .05em;
+    padding: 5px 12px; border-radius: 99px;
+    background: rgba(255,255,255,.22); color: #fff;
+}
+.rec-doc-cuerpo { padding: 24px 26px; }
+
+.rec-doc-partes {
+    display: grid; gap: 16px;
+    grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+    padding-bottom: 18px; margin-bottom: 18px;
+    border-bottom: 1px solid var(--borde);
+}
+.rec-doc-partes strong { display: block; font-size: .92rem; color: var(--gris-osc); }
+.rec-doc-sub { display: block; font-size: .78rem; color: var(--gris); margin-top: 2px; }
+.rec-doc-bloque p { font-size: .88rem; color: var(--gris-med); margin-top: 3px; }
+
+/* Los medicamentos numerados: así se lee una receta, y el número sirve
+   para referirse a uno por teléfono ("el segundo"). */
+.rec-items { list-style: none; counter-reset: med; margin-top: 8px; }
+.rec-items li {
+    counter-increment: med; position: relative;
+    padding: 13px 15px 13px 42px; margin-bottom: 9px;
+    border: 1px solid var(--borde); border-radius: var(--radio-sm);
+}
+.rec-items li::before {
+    content: counter(med); position: absolute; left: 13px; top: 13px;
+    width: 20px; height: 20px; border-radius: 50%;
+    background: var(--azul-claro); color: var(--azul-osc);
+    font-size: .72rem; font-weight: 700;
+    display: grid; place-items: center;
+}
+.rec-item-nombre strong { font-size: .95rem; color: var(--gris-osc); }
+.rec-item-nombre span   { font-size: .8rem; color: var(--gris); margin-left: 6px; }
+.rec-item-pauta {
+    display: flex; align-items: baseline; justify-content: space-between;
+    gap: 12px; flex-wrap: wrap; margin-top: 5px;
+    font-size: .85rem; color: var(--gris-med);
+}
+.rec-item-pauta strong { color: var(--azul-osc); }
+.rec-item-cant { font-size: .76rem; color: var(--gris); flex-shrink: 0; }
+
+.rec-legal {
+    margin-top: 20px; padding-top: 15px; border-top: 1px dashed var(--borde);
+    font-size: .76rem; color: var(--gris); line-height: 1.6;
+}
+
+.rec-barra {
+    display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+    max-width: 720px;
+}
+
+@media (max-width: 860px) {
+    .rec-renglon { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 560px) {
+    .rec-renglon { grid-template-columns: 1fr; }
+    .rec-renovar, .rec-resolver { flex-direction: column; align-items: stretch; }
+    .rec-renovar .btn, .rec-resolver .btn { width: 100%; justify-content: center; }
+    .rec-pedidos li { flex-direction: column; align-items: flex-start; }
+    .rec-doc-cuerpo { padding: 18px; }
+}
+
+/* Al imprimir una receta vale lo mismo que al imprimir un comprobante:
+   fuera la navegación y los botones, y que los fondos de color salgan.
+   Las reglas de .comprobante ya lo hacen; esto agrega lo propio del
+   documento de receta. */
+@media print {
+    .rec-barra, .rec-renovar, .rec-resolver { display: none !important; }
+    .rec-doc { max-width: none; box-shadow: none; border: 1px solid #ccc; }
+    .rec-doc-estado, .rec-doc .comp-cab {
+        -webkit-print-color-adjust: exact; print-color-adjust: exact;
+    }
+    .rec-items li { break-inside: avoid; page-break-inside: avoid; }
+}

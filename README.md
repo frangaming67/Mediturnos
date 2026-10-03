@@ -177,12 +177,15 @@ muestra el estado de cada requisito y permite enviar un correo de prueba.
 | `Usuario::RESET_MINUTOS` | `sistema/modelos/Usuario.php` | Validez del enlace de recuperación (60) |
 | `SubidaImagen::MAX_BYTES` | `includes/subida_imagen.php` | Peso máximo de la foto (3 MB) |
 | `Pago::HORAS_PLAZO` | `sistema/modelos/Pago.php` | Plazo para abonar un turno (48 h) |
+| `Turno::HORAS_ANTELACION` | `sistema/modelos/Turno.php` | Antelación mínima para reservar o reprogramar (2 h) |
+| `SubidaEstudio::MAX_BYTES` | `includes/subida_estudio.php` | Peso máximo de un resultado (8 MB) |
+| `Receta::VIGENCIA_DIAS` | `sistema/modelos/Receta.php` | Días que vale una receta nueva (30) |
 
 ---
 
 ## Base de datos
 
-19 tablas y 5 vistas. El modelo está normalizado hasta 4FN. Detalle completo en
+28 tablas y 5 vistas. El modelo está normalizado hasta 4FN. Detalle completo en
 [docs/database.md](docs/database.md).
 
 ```
@@ -255,17 +258,22 @@ mediturnos/
 │   ├── seguridad.php       Cookies, cabeceras, anti fuerza bruta
 │   ├── validacion.php      Reglas de campo compartidas
 │   ├── mailer.php          Envío de correo (SMTP / archivo)
-│   └── subida_imagen.php   Subida segura de imágenes
+│   ├── notificaciones.php  Qué aviso se manda y por qué canal
+│   ├── guardias.php        Controles de acceso compartidos
+│   ├── subida_imagen.php   Subida segura de imágenes
+│   └── subida_estudio.php  Resultados médicos, fuera de la carpeta pública
 │
 ├── sistema/
-│   ├── modelos/            10 clases de acceso a datos
-│   ├── controladores/      11 controladores
+│   ├── modelos/            14 clases de acceso a datos
+│   ├── controladores/      13 controladores
 │   └── vistas/             Plantillas, layouts y componentes
 │
 ├── dashboard/              Paneles por rol + componentes
 ├── publico/css/            Hojas de estilo
 ├── assets/js/              Calendario y modales
 ├── sql/                    Esquema y migraciones
+├── pruebas/                Guiones de verificación
+├── almacenamiento/         Archivos privados (resultados de estudios)
 └── docs/                   Documentación técnica
 ```
 
@@ -344,6 +352,10 @@ Detalle en [docs/coding-standards.md](docs/coding-standards.md). En resumen:
 | [security.md](docs/security.md) | Amenazas cubiertas y decisiones de seguridad |
 | [frontend.md](docs/frontend.md) | Sistema de diseño, CSS y accesibilidad |
 | [backend.md](docs/backend.md) | Modelos, controladores y convenciones |
+| [area-paciente.md](docs/area-paciente.md) | El Área del Paciente: reserva, pago y confirmación |
+| [historial-clinico.md](docs/historial-clinico.md) | Consultas, estudios y entrega segura de resultados |
+| [recetas.md](docs/recetas.md) | Recetas y circuito de renovación |
+| [notificaciones.md](docs/notificaciones.md) | Avisos en la aplicación y por correo |
 | [api.md](docs/api.md) | Endpoints internos JSON |
 | [deployment.md](docs/deployment.md) | Puesta en producción |
 | [contributing.md](docs/contributing.md) | Cómo contribuir |

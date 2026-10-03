@@ -20,6 +20,7 @@ SQL**. Reciben el `PDO` por constructor.
 | `Notificacion` | Centro de avisos: alta, lectura, filtros, borrado |
 | `Calificacion` | Puntaje y comentario de una consulta ya realizada |
 | `Historial` | Consultas y estudios: la línea de tiempo clínica del paciente |
+| `Receta` | Recetas, sus medicamentos y el circuito de renovación |
 
 ### Convenciones
 
@@ -49,7 +50,7 @@ mostradas.
 
 ## Controladores
 
-Diez archivos en `sistema/controladores/`, todos con la misma forma:
+Trece archivos en `sistema/controladores/`, todos con la misma forma:
 
 ```php
 require conexion + auth + modelo;
@@ -142,6 +143,8 @@ Se usan siempre que dos o más escrituras deban ocurrir juntas:
 | `Perfil::guardarCuenta()` | Nombre, apellido y correo en `usuario` **y** en la ficha |
 | `Perfil::guardarCobertura()` | Baja de la cobertura anterior + alta de la nueva |
 | `Pago::expirarVencidos()` | Vencer pagos + cancelar turnos |
+| `Receta::emitir()` | Cabecera + sus medicamentos: una receta sin medicamentos es un papel firmado en blanco |
+| `Receta::resolverRenovacion()` | Emitir la receta nueva + copiar sus renglones + cerrar el pedido |
 
 El patrón:
 
@@ -168,6 +171,7 @@ try {
 | `includes/mailer.php` | Envío de correo con dos implementaciones |
 | `includes/subida_imagen.php` | Subida y procesamiento seguro de imágenes |
 | `includes/subida_estudio.php` | Resultados médicos: fuera de la carpeta pública — ver [historial-clinico.md](historial-clinico.md) |
+| `includes/guardias.php` | Controles de acceso que necesita más de un controlador |
 
 `auth.php` y `seguridad.php` están separados a propósito: el primero responde
 preguntas de negocio (quién sos, qué podés hacer) y el segundo aplica medidas de

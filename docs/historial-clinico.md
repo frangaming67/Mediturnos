@@ -148,7 +148,7 @@ alinea las tres tablas nuevas al collation que ya tenía todo lo demás.
 
 > `utf8mb4_unicode_ci` es el **mejor** de los dos: ordena los acentos como
 > corresponde en castellano. Lo correcto a futuro sería llevar todo el esquema
-> hacia él — pero son 23 tablas con claves foráneas entre sí, y eso se hace con la
+> hacia él — pero hoy son 28 tablas con claves foráneas entre sí, y eso se hace con la
 > base fuera de servicio y con respaldo. Queda en la deuda técnica. Lo que no se
 > puede es tener las dos cosas conviviendo.
 

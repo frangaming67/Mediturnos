@@ -18,8 +18,10 @@ require_once __DIR__ . '/../../config/conexion.php';
 require_once __DIR__ . '/../../includes/auth.php';
 require_once __DIR__ . '/../../includes/notificaciones.php';
 require_once __DIR__ . '/../../includes/subida_estudio.php';
+require_once __DIR__ . '/../../includes/guardias.php';
 require_once __DIR__ . '/../modelos/Historial.php';
 require_once __DIR__ . '/../modelos/Turno.php';
+require_once __DIR__ . '/../modelos/Receta.php';
 
 verificarSesion();
 
@@ -28,42 +30,21 @@ $modeloTurno = new Turno($pdo);
 $accion      = $_GET['accion'] ?? 'index';
 
 $URL     = BASE_URL . 'sistema/controladores/ControladorHistorial.php';
-$URL_T   = BASE_URL . 'sistema/controladores/ControladorTurno.php';
 $rol     = $_SESSION['rol'] ?? '';
 $miMat   = (int) ($_SESSION['matricula'] ?? 0);
-
-/**
- * Trae un turno que ESTE médico atendió, o corta.
- *
- * El mismo control se necesita en las cuatro acciones del médico, y
- * repetido en cada una sería fácil de olvidar actualizar en alguna — que
- * es exactamente cómo aparecen los agujeros de IDOR. La matrícula sale
- * siempre de la sesión, nunca de la petición.
- */
-function turnoDelMedico(Turno $modeloTurno, int $idTurno, string $URL_T): array
-{
-    $t = $modeloTurno->detalleDeTurno($idTurno);
-
-    if (!$t) {
-        header('Location: ' . BASE_URL . 'dashboard.php?err=' . urlencode('No encontramos ese turno.'));
-        exit;
-    }
-    if ((int) $t['matricula'] !== (int) ($_SESSION['matricula'] ?? 0)) {
-        http_response_code(403);
-        include __DIR__ . '/../vistas/layouts/403.php';
-        exit;
-    }
-    return $t;
-}
 
 switch ($accion) {
 
     // ── Ficha clínica de un turno (la escribe el médico) ─────
     case 'consulta':
         verificarRol(['medico']);
-        $turno      = turnoDelMedico($modeloTurno, (int) ($_GET['id'] ?? 0), $URL_T);
+        $turno      = turnoDelMedico($modeloTurno, (int) ($_GET['id'] ?? 0));
         $consulta   = $modelo->consultaDeTurno((int) $turno['id_turno']);
         $estudios   = $modelo->estudiosDePaciente((int) $turno['id_paciente']);
+        // Las recetas que ESTE profesional le emitió. No todas las del
+        // paciente: la ficha es su espacio de trabajo, y para el
+        // historial completo está la pantalla del historial.
+        $recetas    = (new Receta($pdo))->deDelMedicoYPaciente($miMat, (int) $turno['id_paciente']);
         $mensaje    = !empty($_GET['err']) ? urldecode($_GET['err']) : null;
         require __DIR__ . '/../vistas/historial/consulta.php';
         break;
@@ -73,7 +54,7 @@ switch ($accion) {
         verificarRol(['medico']);
         csrf_verificar();
 
-        $turno = turnoDelMedico($modeloTurno, (int) ($_POST['id_turno'] ?? 0), $URL_T);
+        $turno = turnoDelMedico($modeloTurno, (int) ($_POST['id_turno'] ?? 0));
         $volver = $URL . '?accion=consulta&id=' . (int) $turno['id_turno'];
 
         // Sólo se registra sobre una consulta que YA ocurrió. Dejar
@@ -134,7 +115,7 @@ switch ($accion) {
         verificarRol(['medico']);
         csrf_verificar();
 
-        $turno  = turnoDelMedico($modeloTurno, (int) ($_POST['id_turno'] ?? 0), $URL_T);
+        $turno  = turnoDelMedico($modeloTurno, (int) ($_POST['id_turno'] ?? 0));
         $volver = $URL . '?accion=consulta&id=' . (int) $turno['id_turno'];
 
         $tipo   = is_string($_POST['tipo']   ?? null) ? trim($_POST['tipo'])   : '';
@@ -153,7 +134,7 @@ switch ($accion) {
             );
 
             obtenerNotificador($pdo)->notificarPaciente((int) $turno['id_paciente'], new Aviso(
-                TipoAviso::RECETA_NUEVA,
+                TipoAviso::ESTUDIO_PEDIDO,
                 'Te pidieron un estudio',
                 'Dr/a. ' . $turno['medico'] . ' te solicitó: ' . $nombre . '.',
                 'historial.php',
@@ -181,7 +162,7 @@ switch ($accion) {
         verificarRol(['medico']);
         csrf_verificar();
 
-        $turno  = turnoDelMedico($modeloTurno, (int) ($_POST['id_turno'] ?? 0), $URL_T);
+        $turno  = turnoDelMedico($modeloTurno, (int) ($_POST['id_turno'] ?? 0));
         $volver = $URL . '?accion=consulta&id=' . (int) $turno['id_turno'];
 
         $estudio = $modelo->estudioConDueno((int) ($_POST['id_estudio'] ?? 0));
