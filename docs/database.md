@@ -188,6 +188,8 @@ Ejecutar **en este orden** (cada una asume la anterior):
 | 13 | `notificaciones.sql` | Centro de notificaciones |
 | 14 | `reprogramacion.sql` | El trigger también registra el cambio de horario |
 | 15 | `calificaciones.sql` | Calificación de profesionales |
+| 16 | `historial_clinico.sql` | Consultas y estudios |
+| 17 | `collation_unificada.sql` | Alinea el collation de las tablas nuevas |
 
 ## Defectos de esquema corregidos en `auth_v2.sql`
 
