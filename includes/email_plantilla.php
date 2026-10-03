@@ -55,7 +55,17 @@ function urlAbsoluta(string $ruta): string
     if ($ruta === '' || preg_match('#^https?://#i', $ruta)) {
         return $ruta;
     }
-    $esquema = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+    // esHttps() vive en seguridad.php y mira también las cabeceras del
+    // proxy: en un hosting con el certificado terminado afuera, esta
+    // comprobación sola armaría todos los enlaces de los correos con
+    // http:// en un sitio que sí tiene HTTPS.
+    //
+    // El require_once va acá y no arriba porque email_plantilla.php se
+    // usa también desde contextos que no cargan seguridad.php, y la
+    // plantilla no debería arrastrar toda la infraestructura de sesión
+    // sólo para armar un enlace.
+    require_once __DIR__ . '/seguridad.php';
+    $esquema = esHttps() ? 'https' : 'http';
     $host    = $_SERVER['HTTP_HOST'] ?? 'localhost';
     return $esquema . '://' . $host . BASE_URL . ltrim($ruta, '/');
 }

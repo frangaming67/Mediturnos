@@ -273,6 +273,7 @@ mediturnos/
 ├── assets/js/              Calendario y modales
 ├── sql/                    Esquema y migraciones
 ├── pruebas/                Guiones de verificación
+├── publicacion/            Base de demostración y su verificación
 ├── almacenamiento/         Archivos privados (resultados de estudios)
 └── docs/                   Documentación técnica
 ```
