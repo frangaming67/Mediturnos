@@ -320,6 +320,17 @@ SET FOREIGN_KEY_CHECKS = 1;
 -- =============================================================
 SQL
 
+# ── Un solo tipo de fin de línea ──────────────────────────────
+# mysqldump en Windows escribe CRLF, pero los cuerpos de los
+# procedimientos salen con los saltos que tenían en la migración (LF).
+# El archivo queda mezclado, y entonces: Git lo marca como modificado
+# cada vez que se regenera aunque el contenido sea idéntico, y el .sql
+# que se sube termina con dos convenciones adentro.
+#
+# Se saca el CR del final de cada línea. No se usa `tr -d` a secas
+# porque eso borraría también un CR que estuviera DENTRO de un dato.
+sed -i 's/\r$//' "$SALIDA"
+
 LINEAS="$(wc -l < "$SALIDA")"
 PESO="$(du -h "$SALIDA" | cut -f1)"
 echo
