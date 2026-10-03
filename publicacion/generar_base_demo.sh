@@ -236,6 +236,8 @@ VALUES (@pac, $PLAN_OS, '$AFILIADO', CURDATE());
 --         (SELECT id_paciente FROM usuario WHERE usuario = 'demo.paciente');
 --     DELETE FROM receta WHERE id_paciente =
 --         (SELECT id_paciente FROM usuario WHERE usuario = 'demo.paciente');
+--     DELETE FROM notificacion WHERE id_usuario =
+--         (SELECT id_usuario FROM usuario WHERE usuario = 'demo.paciente');
 
 -- ── Turno ya atendido, hace tres semanas ─────────────────────
 -- La hora es 10:00 y la fecha se calcula desde hoy, así que el archivo
@@ -280,6 +282,40 @@ SET @r1 = LAST_INSERT_ID();
 INSERT INTO receta_medicamento (id_receta, nombre, presentacion, dosis, frecuencia, duracion, cantidad)
 VALUES (@r1, 'Enalapril', 'comprimidos 10 mg', '1 comprimido', 'cada 12 horas', 'por 30 días', 2),
        (@r1, 'Aspirina',  'comprimidos 100 mg', '1 comprimido', 'por la mañana',  'por 30 días', 1);
+
+-- ── Notificaciones ───────────────────────────────────────────
+-- Para que el centro de avisos no aparezca vacío. Son los mismos
+-- avisos que el sistema habría emitido al pasar lo de arriba.
+--
+-- Uno queda SIN LEER a propósito: así se ve el campanita con su globo,
+-- que es la mitad de lo que hay que mostrar.
+INSERT INTO notificacion (id_usuario, tipo, titulo, mensaje, url_accion,
+                          id_referencia, creada_en, leida_en, email_enviado_en)
+SELECT u.id_usuario, 'receta_nueva', 'Tenés una receta nueva',
+       CONCAT('Dr/a. ', m.apellido, ', ', m.nombre,
+              ' te emitió una receta con 2 medicamentos.'),
+       'recetas.php', @r1,
+       DATE_SUB(NOW(), INTERVAL 21 DAY), NULL, DATE_SUB(NOW(), INTERVAL 21 DAY)
+FROM   usuario u, medico m
+WHERE  u.usuario = 'demo.paciente' AND m.matricula = $MAT;
+
+INSERT INTO notificacion (id_usuario, tipo, titulo, mensaje, url_accion,
+                          creada_en, leida_en, email_enviado_en)
+SELECT u.id_usuario, 'estudio_pedido', 'Te pidieron un estudio',
+       'Hemograma completo. Cuando el resultado esté cargado te avisamos.',
+       'historial.php',
+       DATE_SUB(NOW(), INTERVAL 21 DAY),
+       DATE_SUB(NOW(), INTERVAL 20 DAY), DATE_SUB(NOW(), INTERVAL 21 DAY)
+FROM   usuario u WHERE u.usuario = 'demo.paciente';
+
+INSERT INTO notificacion (id_usuario, tipo, titulo, mensaje, url_accion,
+                          creada_en, leida_en)
+SELECT u.id_usuario, 'resultados_listos', 'Ficha de tu consulta disponible',
+       'Tu profesional registró el detalle de la atención.',
+       'historial.php',
+       DATE_SUB(NOW(), INTERVAL 20 DAY), DATE_SUB(NOW(), INTERVAL 20 DAY)
+FROM   usuario u WHERE u.usuario = 'demo.paciente';
+
 
 -- ── Turno próximo, confirmado ────────────────────────────────
 -- A diez días: deja ver la cuenta regresiva, el detalle y la

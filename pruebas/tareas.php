@@ -30,7 +30,12 @@ function chk(string $q, $esperado, $real): void {
 }
 function chkq(string $q, bool $c): void { chk($q, true, $c); }
 
-if (!mailerEsSimulado()) {
+// Con EN_PRODUCCION en false, MailerSmtp entrega sólo a la casilla del
+// propio sistema (ver includes/mailer.php), así que ningún paciente de
+// prueba recibe nada y el guión puede correr igual. Lo que NO se permite
+// es correrlo con la configuración de producción puesta: ahí las
+// direcciones son de gente real.
+if (!mailerEsSimulado() && defined('EN_PRODUCCION') && EN_PRODUCCION) {
     fwrite(STDERR,
         "\n!! El correo está configurado con credenciales reales.\n" .
         "   Este guión usa pacientes de la base de desarrollo, con direcciones\n" .
@@ -39,7 +44,9 @@ if (!mailerEsSimulado()) {
         "       mv config/mail.php config/mail.php.apagado\n\n");
     exit(1);
 }
-echo "correo en modo archivo: no se manda nada\n";
+echo mailerEsSimulado()
+    ? "correo en modo archivo: no se manda nada\n"
+    : "correo por SMTP; en desarrollo sólo entrega a la casilla del sistema\n";
 
 // ── Datos de trabajo ─────────────────────────────────────────
 // Un paciente con cuenta ACTIVA: sin cuenta no hay a quién avisarle, y la
@@ -78,8 +85,9 @@ function turnoEn(PDO $pdo, int $horas, int $estado, array $d): int {
         try {
             $stmt = $pdo->prepare(
                 "INSERT INTO turno (fecha, hora_inicio, id_estado, id_paciente,
-                                    matricula, id_especialidad, id_consultorio, id_plan)
-                 VALUES (:f, :h, :e, :p, :m, :esp, :c, :pl)"
+                                    matricula, id_especialidad, id_consultorio, id_plan,
+                                    observacion)
+                 VALUES (:f, :h, :e, :p, :m, :esp, :c, :pl, 'PRUEBA-TAREAS')"
             );
             $stmt->execute([':f' => $fecha, ':h' => $hora, ':e' => $estado,
                 ':p' => $d['pac'], ':m' => $d['mat'], ':esp' => $d['esp'],
@@ -94,6 +102,24 @@ function turnoEn(PDO $pdo, int $horas, int $estado, array $d): int {
 }
 
 $d = compact('pac', 'mat', 'esp', 'cons', 'plan');
+
+// ── Barrer lo que haya quedado de una corrida cortada ────────
+// Un guión que muere por la mitad deja sus turnos atrás —y basta
+// canalizar la salida a `head` para que eso pase, porque cierra la
+// tubería y mata el proceso—. Entonces la comprobación final de la
+// corrida siguiente falla por culpa de la anterior, que es la peor
+// clase de fallo: el que no tiene nada que ver con lo que se cambió.
+//
+// Los turnos de prueba se reconocen por su observación.
+foreach ($pdo->query("SELECT id_turno FROM turno WHERE observacion = 'PRUEBA-TAREAS'")
+         ->fetchAll(PDO::FETCH_COLUMN) as $viejo) {
+    $pdo->exec("DELETE FROM pago            WHERE id_turno = $viejo");
+    $pdo->exec("DELETE FROM historial_turno WHERE id_turno = $viejo");
+    $pdo->exec("DELETE FROM notificacion    WHERE id_referencia = $viejo
+                  AND tipo = 'turno_recordatorio'");
+    $pdo->exec("DELETE FROM turno           WHERE id_turno = $viejo");
+    echo "  (se barrió el turno $viejo de una corrida anterior)\n";
+}
 
 // Punto de partida: ningún aviso previo de estos tipos para este usuario.
 $pdo->prepare("DELETE FROM notificacion WHERE id_usuario = :u AND tipo IN ('turno_recordatorio','pago_por_vencer')")
@@ -121,7 +147,16 @@ chkq("apunta al detalle del turno",
 // `?? 'x'` NO sirve acá: el operador se dispara justamente con NULL,
 // que es el valor que se quiere comprobar. La clave existe en la fila.
 chk("nace sin leer", null, $aviso['leida_en']);
-chkq("se registró el envío del correo", !empty($aviso['email_enviado_en']));
+// En modo archivo el "envío" siempre sale bien, así que la columna se
+// completa. Con SMTP en desarrollo el correo al paciente de prueba se
+// bloquea a propósito (sus direcciones no existen), y entonces queda en
+// NULL: eso es lo correcto, no un fallo.
+if (mailerEsSimulado()) {
+    chkq("se registró el envío del correo", !empty($aviso['email_enviado_en']));
+} else {
+    chk("el correo al paciente de prueba quedó sin enviar, como corresponde",
+        null, $aviso['email_enviado_en']);
+}
 
 // La segunda corrida NO puede duplicar: es lo que hace que sea seguro
 // llamar a esto desde cada visita al sitio.
@@ -218,7 +253,11 @@ echo "\n-- LIMPIEZA ------------------------------------------\n";
 
 $pdo->prepare("DELETE FROM notificacion WHERE id_usuario = :u AND tipo IN ('turno_recordatorio','pago_por_vencer')")
     ->execute([':u' => $usr]);
-foreach ($creados['turno'] as $id) {
+// Se borra por la MARCA y no sólo por la lista en memoria: si el guión
+// se cortara, la lista se pierde y la marca queda en la base.
+$deBorrar = $pdo->query("SELECT id_turno FROM turno WHERE observacion = 'PRUEBA-TAREAS'")
+                ->fetchAll(PDO::FETCH_COLUMN);
+foreach (array_unique(array_merge($creados['turno'], $deBorrar)) as $id) {
     $pdo->exec("DELETE FROM pago WHERE id_turno = $id");
     $pdo->exec("DELETE FROM historial_turno WHERE id_turno = $id");
     $pdo->exec("DELETE FROM turno WHERE id_turno = $id");

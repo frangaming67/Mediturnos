@@ -149,7 +149,32 @@ El resto del proyecto debe ser de **sólo lectura** para el servidor web. Un
 directorio con escritura y ejecución de PHP es el camino más corto a que alguien
 suba un archivo y lo ejecute.
 
-### 7. HTTPS
+### 7. El evento programado (recomendado)
+
+Los recordatorios de turno y los avisos de pago por vencer no los dispara
+ninguna acción: los dispara el reloj. Lo correcto es un evento programado que
+corra la tarea una vez por hora.
+
+En Linux (`crontab -e`):
+
+```bash
+0 * * * * /usr/bin/php /ruta/al/proyecto/tareas/ejecutar.php >> /ruta/tareas.log 2>&1
+```
+
+Muchos paneles de hosting tienen una sección "Cron jobs" donde se pega la
+misma línea.
+
+**Si tu hosting no da cron**, no hace falta hacer nada: el panel del sistema ya
+corre las tareas con un freno de diez minutos, así que la primera visita de
+cualquier usuario después de ese rato dispara los avisos de todos. El defecto de
+ese camino es claro y conviene saberlo: **si nadie entra al sitio, nadie recibe
+su recordatorio.** Con cron, ese agujero desaparece.
+
+Repetir la tarea es inofensivo: `notificarUnaVez()` comprueba si ya se avisó por
+ese motivo, así que correrla mil veces produce los mismos avisos que correrla
+una.
+
+### 8. HTTPS
 
 Casi todo hosting compartido da un certificado Let's Encrypt gratis desde el
 panel. Activarlo y después descomentar, en el `.htaccess` del raíz, el bloque de
@@ -217,9 +242,11 @@ mis turnos, mis pagos, historial, mis recetas, mi perfil. Es lo mismo que hace
 ### Rendimiento
 
 - [ ] Compresión y caché: ya vienen en el `.htaccess` del raíz
-- [ ] `expirarVencidos()` y `marcarRealizadosAutomaticamente()` corren en cada
-      visita. Funciona, pero deberían ser un evento programado — está anotado en
-      la [deuda técnica](roadmap.md)
+- [ ] **Evento programado configurado** para `tareas/ejecutar.php` (paso 7). Sin
+      él los recordatorios dependen de que alguien entre al sitio
+- [ ] `expirarVencidos()` y `marcarRealizadosAutomaticamente()` siguen corriendo
+      en cada visita. Funciona, pero deberían migrar al mismo evento programado
+      — está anotado en la [deuda técnica](roadmap.md)
 
 ---
 
