@@ -14,6 +14,8 @@ config/mail.php
 # (config/entorno.ejemplo.php). Sin este archivo el proyecto corre con
 # los valores de XAMPP, así que un clon no necesita configurar nada.
 config/entorno.php
+# Y la variante del sitio público, que apunta a la base de demostración.
+config/entorno.*.php
 
 # ── Correos generados en modo desarrollo ─────────────────────
 # Son mails de prueba con enlaces de recuperación válidos.

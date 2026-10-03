@@ -208,19 +208,31 @@ class MailerSmtp implements Mailer
      * En producción (EN_PRODUCCION en true) esto no se aplica: ahí las
      * direcciones son de gente real.
      */
-    private function permitidoEnDesarrollo(string $para): bool
+    private function destinatarioPermitido(string $para): bool
     {
         // defined(): mailer.php se usa también desde guiones que no
         // cargan conexion.php, y en ese caso no hay ninguna constante que
         // consultar. Sin configuración explícita se asume desarrollo, que
         // es la opción prudente: si alguien olvida definirla, el sistema
         // manda MENOS correo y no más.
-        $enProduccion = defined('EN_PRODUCCION') && EN_PRODUCCION;
-        if ($enProduccion) {
+        // ── 'solo_a' MANDA SIEMPRE, en cualquier entorno ───────
+        // Si está configurada explícitamente, se respeta aunque sea
+        // producción. Hace falta para el caso de un sitio PÚBLICO de
+        // demostración: ahí cualquiera puede escribir una dirección en
+        // el formulario de registro, y sin esta lista el sistema se
+        // convierte en un formulario para mandar correo desde la casilla
+        // del dueño a donde el visitante quiera. Eso es un vector de
+        // abuso que termina con la cuenta suspendida por el proveedor.
+        if (isset($this->cfg['solo_a'])) {
+            $permitidas = (array) $this->cfg['solo_a'];
+        } elseif (defined('EN_PRODUCCION') && EN_PRODUCCION) {
+            // Producción de verdad y sin lista: las direcciones son de
+            // gente real y hay que escribirles.
             return true;
+        } else {
+            // Desarrollo sin lista: sólo a la casilla del propio sistema.
+            $permitidas = [$this->cfg['desde'] ?? ''];
         }
-
-        $permitidas = $this->cfg['solo_a'] ?? [$this->cfg['desde'] ?? ''];
         if (!is_array($permitidas)) {
             $permitidas = [$permitidas];
         }
@@ -267,9 +279,9 @@ class MailerSmtp implements Mailer
         }
 
         // En desarrollo, sólo a la lista blanca. Ver el comentario de
-        // permitidoEnDesarrollo(): la base de pruebas tiene mil
+        // destinatarioPermitido(): la base de pruebas tiene mil
         // direcciones inventadas en dominios que SÍ existen.
-        if (!$this->permitidoEnDesarrollo($para)) {
+        if (!$this->destinatarioPermitido($para)) {
             $this->error = 'Modo desarrollo: no se escribe a ' . $para
                          . '. Sólo a la casilla del sistema (o a las de "solo_a").';
             error_log('MailerSmtp: ' . $this->error);
