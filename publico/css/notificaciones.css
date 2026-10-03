@@ -1,0 +1,127 @@
+/* ═══════════════════════════════════════════════════════════════
+   CENTRO DE NOTIFICACIONES
+   ═══════════════════════════════════════════════════════════════
+   Archivo propio y no una sección de estilos.css porque esto lo carga
+   UNA pantalla. estilos.css se descarga en todas, y meterle 150 líneas
+   que sirven en una sola es hacer pagar a las otras treinta.
+
+   Lo que sí vive en estilos.css es el campanita de la barra superior:
+   eso aparece en cada página.
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── Barra de herramientas ────────────────────────────────────── */
+.notif-barra {
+    display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+    background: var(--blanco); border-radius: var(--radio);
+    box-shadow: var(--sombra); padding: 13px 16px; margin-bottom: 18px;
+}
+
+/* Pestañas de estado. Son enlaces y no botones de un formulario: cada
+   filtro es una URL distinta, así que "atrás" funciona y se puede
+   compartir o guardar en favoritos. */
+.notif-pestanas { display: flex; gap: 4px; flex-wrap: wrap; }
+.notif-pestana {
+    display: inline-flex; align-items: center; gap: 7px;
+    padding: 7px 14px; border-radius: 99px;
+    font-size: .85rem; font-weight: 600; color: var(--gris-med);
+    text-decoration: none; transition: background .15s, color .15s;
+}
+.notif-pestana:hover  { background: var(--gris-claro); text-decoration: none; }
+.notif-pestana.activa { background: var(--azul); color: var(--blanco); }
+.notif-pestana span {
+    font-size: .74rem; font-weight: 700;
+    background: var(--gris-claro); color: var(--gris);
+    padding: 1px 7px; border-radius: 99px;
+}
+.notif-pestana.activa span { background: rgba(255,255,255,.26); color: var(--blanco); }
+
+.notif-tipo { display: flex; align-items: center; gap: 8px; }
+.notif-tipo .form-control { min-width: 190px; font-size: .84rem; padding: 7px 10px; }
+
+/* Las acciones en bloque se van a la derecha: son las menos frecuentes y
+   las más destructivas, así que no deberían quedar bajo el pulgar. */
+.notif-acciones { display: flex; gap: 8px; flex-wrap: wrap; margin-left: auto; }
+
+/* ── La lista ─────────────────────────────────────────────────── */
+.notif-lista { list-style: none; display: flex; flex-direction: column; gap: 9px; }
+
+.notif-item {
+    display: flex; align-items: flex-start; gap: 13px;
+    background: var(--blanco); border-radius: var(--radio);
+    box-shadow: var(--sombra); padding: 14px 16px;
+    border-left: 3px solid transparent;
+}
+/* Sin leer: borde azul y fondo apenas teñido. Dos señales y no una,
+   porque el color del borde solo no alcanza para quien no distingue
+   bien el azul del gris. El texto "Sin leer" del pie es la tercera, y
+   es la que funciona sin ver ningún color. */
+.notif-item--nueva {
+    border-left-color: var(--azul);
+    background: linear-gradient(90deg, var(--azul-claro) 0%, var(--blanco) 60%);
+}
+
+.notif-ico {
+    flex-shrink: 0; width: 34px; height: 34px; border-radius: 50%;
+    display: grid; place-items: center;
+}
+.notif-ico--azul     { background: var(--azul-claro);     color: var(--azul); }
+.notif-ico--verde    { background: var(--verde-claro);    color: var(--verde); }
+.notif-ico--rojo     { background: var(--rojo-claro);     color: var(--rojo); }
+.notif-ico--amarillo { background: var(--amarillo-claro); color: var(--amarillo); }
+
+.notif-cuerpo { flex: 1; min-width: 0; }
+
+.notif-cab {
+    display: flex; align-items: baseline; justify-content: space-between;
+    gap: 12px; flex-wrap: wrap;
+}
+.notif-cab h3 { font-size: .93rem; font-weight: 700; line-height: 1.4; }
+.notif-cab h3 a { color: var(--gris-osc); text-decoration: none; }
+.notif-cab h3 a:hover { color: var(--azul); text-decoration: underline; }
+
+.notif-cuando {
+    flex-shrink: 0; font-size: .76rem; color: var(--gris);
+    /* El título completo lleva la fecha exacta: "hace 3 días" es más
+       fácil de leer, pero a veces hace falta el dato preciso. */
+    cursor: help;
+}
+
+.notif-mensaje {
+    font-size: .85rem; color: var(--gris-med); line-height: 1.55; margin-top: 3px;
+}
+
+.notif-pie {
+    display: flex; align-items: center; gap: 9px; flex-wrap: wrap; margin-top: 8px;
+}
+.notif-etiqueta {
+    font-size: .68rem; font-weight: 700;
+    text-transform: uppercase; letter-spacing: .05em;
+    color: var(--gris); background: var(--gris-claro);
+    padding: 3px 8px; border-radius: 99px;
+}
+.notif-punto {
+    font-size: .68rem; font-weight: 700;
+    text-transform: uppercase; letter-spacing: .05em;
+    color: var(--azul-osc); background: var(--azul-claro);
+    padding: 3px 8px; border-radius: 99px;
+}
+.notif-mail { font-size: .72rem; color: var(--gris); font-style: italic; cursor: help; }
+
+/* El botón de borrar: visible siempre, no sólo al pasar el mouse. En un
+   teléfono no hay "pasar el mouse", y un control que aparece sólo con
+   hover es un control que no existe para quien usa el dedo. */
+.notif-borrar { flex-shrink: 0; }
+
+/* ── Responsive ───────────────────────────────────────────────── */
+@media (max-width: 760px) {
+    .notif-barra { flex-direction: column; align-items: stretch; }
+    .notif-acciones { margin-left: 0; }
+    .notif-tipo .form-control { width: 100%; min-width: 0; }
+    .notif-pestanas { justify-content: space-between; }
+    .notif-pestana { flex: 1; justify-content: center; }
+}
+@media (max-width: 480px) {
+    .notif-item { padding: 12px 13px; gap: 10px; }
+    .notif-ico { width: 28px; height: 28px; }
+    .notif-cab { flex-direction: column; gap: 2px; }
+}

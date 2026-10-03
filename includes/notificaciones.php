@@ -153,6 +153,46 @@ final class TipoAviso
     {
         return array_keys(self::CONFIG);
     }
+
+    /**
+     * Nombre legible de un tipo, para el filtro del centro de avisos.
+     *
+     * Está separado de CONFIG porque son dos cosas distintas: CONFIG dice
+     * cómo se ENTREGA el aviso (icono, color, correo) y esto dice cómo se
+     * LLAMA. Mezclarlos haría que agregar una traducción obligue a tocar
+     * la tabla de configuración de entrega.
+     *
+     * El valor por omisión convierte `turno_reservado` en "Turno
+     * reservado": si alguien agrega un tipo y se olvida de poner su
+     * nombre, el filtro muestra algo legible en vez de la clave cruda.
+     */
+    public static function etiqueta(string $tipo): string
+    {
+        $nombres = [
+            self::TURNO_RESERVADO    => 'Turno reservado',
+            self::TURNO_CONFIRMADO   => 'Turno confirmado',
+            self::TURNO_CANCELADO    => 'Turno cancelado',
+            self::TURNO_REPROGRAMADO => 'Turno reprogramado',
+            self::TURNO_RECORDATORIO => 'Recordatorio de turno',
+            self::PAGO_APROBADO      => 'Pago aprobado',
+            self::PAGO_RECHAZADO     => 'Pago rechazado',
+            self::PAGO_POR_VENCER    => 'Pago por vencer',
+            self::ESTUDIO_PEDIDO     => 'Estudio solicitado',
+            self::RESULTADOS_LISTOS  => 'Resultados disponibles',
+            self::RECETA_NUEVA       => 'Receta nueva',
+            self::RECETA_ANULADA     => 'Receta anulada',
+            self::REFILL_SOLICITADO  => 'Renovación solicitada',
+            self::REFILL_APROBADO    => 'Renovación aprobada',
+            self::REFILL_RECHAZADO   => 'Renovación rechazada',
+            self::MENSAJE_MEDICO     => 'Mensaje del profesional',
+            self::CUENTA_BIENVENIDA  => 'Bienvenida',
+            self::CUENTA_PASSWORD    => 'Cambio de contraseña',
+            self::CUENTA_EMAIL       => 'Cambio de correo',
+            self::CUENTA_DATOS       => 'Datos actualizados',
+        ];
+
+        return $nombres[$tipo] ?? ucfirst(str_replace('_', ' ', $tipo));
+    }
 }
 
 // =============================================================
@@ -409,21 +449,39 @@ class Notificador
         return $this->notificar($idUsuario, $aviso);
     }
 
-    /** Avisa a un paciente por su id de ficha (no de cuenta). */
-    public function notificarPaciente(int $idPaciente, Aviso $aviso): array
+    /**
+     * Avisa a un paciente por su id de ficha (no de cuenta).
+     *
+     * `$unaVez` existe para las tareas por tiempo (recordatorios, avisos
+     * de vencimiento): esas corren una y otra vez sobre las mismas filas,
+     * y sin el control mandarían un correo por cada corrida. El resto de
+     * los avisos nacen de una acción concreta que ocurre una sola vez, y
+     * ahí el control sobraría.
+     */
+    public function notificarPaciente(int $idPaciente, Aviso $aviso, bool $unaVez = false): array
     {
         $idUsuario = $this->modelo->usuarioDePaciente($idPaciente);
         // Una ficha sin cuenta es normal: la recepción carga pacientes
         // que nunca se registraron. No es un error, simplemente no hay
         // a quién avisarle.
-        return $idUsuario ? $this->notificar($idUsuario, $aviso) : [];
+        if (!$idUsuario) {
+            return [];
+        }
+        return $unaVez
+            ? $this->notificarUnaVez($idUsuario, $aviso)
+            : $this->notificar($idUsuario, $aviso);
     }
 
     /** Avisa a un médico por su matrícula. */
-    public function notificarMedico(int $matricula, Aviso $aviso): array
+    public function notificarMedico(int $matricula, Aviso $aviso, bool $unaVez = false): array
     {
         $idUsuario = $this->modelo->usuarioDeMedico($matricula);
-        return $idUsuario ? $this->notificar($idUsuario, $aviso) : [];
+        if (!$idUsuario) {
+            return [];
+        }
+        return $unaVez
+            ? $this->notificarUnaVez($idUsuario, $aviso)
+            : $this->notificar($idUsuario, $aviso);
     }
 
     public function modelo(): Notificacion

@@ -41,6 +41,26 @@ if ($rol === 'paciente') {
 // El navbar es común a los dos roles, por eso se incluye una sola vez
 // acá arriba y no dentro de cada dashboard_*.php (evitaría duplicar el
 // require_once y el riesgo de que un rol lo tenga y el otro no).
+// ── Tareas por tiempo ────────────────────────────────────────
+// Los recordatorios de turno y los avisos de pago por vencer no los
+// dispara ninguna acción: los dispara el reloj. Lo correcto es un evento
+// programado corriendo `tareas/ejecutar.php` (ver docs/deployment.md),
+// pero un hosting compartido no siempre da cron, y el proyecto no puede
+// quedarse sin recordatorios por eso.
+//
+// Así que acá hay un camino de reserva, con un freno de diez minutos por
+// sesión: la primera visita después de ese rato dispara los avisos de
+// TODOS, porque las tareas son globales y no del usuario que entró.
+//
+// Va ANTES del navbar a propósito: el campanita cuenta los avisos sin
+// leer, así que si las tareas corrieran después, el aviso recién creado
+// no se vería hasta la próxima página.
+//
+// Y nunca lanza: si falla, se registra y la página sigue. Nadie debería
+// quedarse sin ver su agenda porque no se pudo mandar un recordatorio.
+require_once __DIR__ . '/includes/tareas.php';
+ejecutarTareas($pdo);
+
 require_once __DIR__ . '/sistema/vistas/layouts/navbar.php';
 
 // ── Errores que llegan de otra pantalla ──────────────────────

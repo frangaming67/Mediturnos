@@ -145,6 +145,14 @@ a:hover { text-decoration: underline; }
     border-left-color: var(--azul);
 }
 .nav-link svg        { flex-shrink: 0; opacity: .75; }
+/* Globo de avisos sin leer dentro del enlace del menú. `margin-left:auto`
+   lo empuja al borde derecho sin tener que saber cuánto mide el texto. */
+.nav-globo {
+    margin-left: auto; flex-shrink: 0;
+    min-width: 18px; padding: 1px 6px; border-radius: 99px;
+    background: var(--rojo); color: var(--blanco);
+    font-size: .66rem; font-weight: 800; text-align: center;
+}
 .nav-link.activo svg { opacity: 1; }
 .sidebar-user {
     padding: 12px 16px;
@@ -219,6 +227,29 @@ a:hover { text-decoration: underline; }
 .topbar-breadcrumb      { font-size: .8rem; color: var(--gris); }
 .topbar-breadcrumb a    { color: var(--gris); }
 .topbar-breadcrumb a:hover { color: var(--azul); }
+
+/* ── Campanita de notificaciones ───────────────────────────────── */
+/* Vive acá y no en notificaciones.css porque aparece en TODAS las
+   páginas; el centro de notificaciones es una sola. */
+.topbar-campana {
+    position: relative; flex-shrink: 0;
+    display: grid; place-items: center;
+    width: 36px; height: 36px; border-radius: 10px;
+    color: var(--gris); text-decoration: none;
+    transition: background .15s, color .15s;
+}
+.topbar-campana:hover  { background: var(--gris-claro); color: var(--azul); }
+.topbar-campana.activo { background: var(--azul-claro); color: var(--azul); }
+/* El globo con la cantidad. `min-width` en vez de `width` para que "9+"
+   no quede apretado contra los bordes. */
+.topbar-campana-globo {
+    position: absolute; top: 2px; right: 1px;
+    min-width: 16px; height: 16px; padding: 0 4px;
+    border-radius: 99px; border: 2px solid var(--blanco);
+    background: var(--rojo); color: var(--blanco);
+    font-size: .62rem; font-weight: 800; line-height: 12px;
+    display: grid; place-items: center;
+}
 
 /* ── Contenido ──────────────────────────────────────────────────── */
 .contenido { padding: 24px; flex: 1; }
