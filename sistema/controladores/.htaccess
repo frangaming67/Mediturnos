@@ -1,0 +1,26 @@
+# -----------------------------------------------------------------
+# EXCEPCIÓN: esta carpeta SÍ se sirve.
+#
+# `sistema/.htaccess` niega el acceso a todo `sistema/`, y está bien para
+# los modelos y las vistas. Pero cada `Controlador*.php` de acá ES una
+# URL del sistema: así se diseñó el proyecto, sin un único punto de
+# entrada y sin reescritura de URLs.
+#
+#     .../sistema/controladores/ControladorTurno.php?accion=index
+#
+# Sin esta excepción, negar `sistema/` deja el sitio sin turnos, sin
+# pagos, sin recetas y sin historial: todo devuelve 403.
+#
+# Las directivas de .htaccess se heredan, y la de la carpeta hija gana
+# sobre la del padre. Eso es exactamente lo que se usa acá.
+#
+# Y el listado queda cortado igual (Options -Indexes del raíz): se puede
+# pedir un controlador por su nombre, no averiguar qué controladores hay.
+# -----------------------------------------------------------------
+<IfModule mod_authz_core.c>
+    Require all granted
+</IfModule>
+<IfModule !mod_authz_core.c>
+    Order allow,deny
+    Allow from all
+</IfModule>

@@ -20,6 +20,39 @@
 // =============================================================
 
 /**
+ * ¿La petición del visitante llegó por HTTPS?
+ *
+ * En casi todo hosting compartido el certificado lo termina un proxy y no
+ * el Apache donde corre PHP: el visitante entra por https:// pero a PHP
+ * la petición le llega por http interno, y `$_SERVER['HTTPS']` no existe.
+ * Sin mirar las cabeceras del proxy, la cookie de sesión saldría sin el
+ * flag `Secure` en un sitio que SÍ tiene HTTPS.
+ *
+ * Las cabeceras `X-Forwarded-*` las puede falsificar quien manda la
+ * petición, y está bien: lo que se consigue con eso es que la aplicación
+ * crea que hay HTTPS cuando no lo hay, o sea que la cookie salga con
+ * `Secure` y los enlaces con `https://`. Lo peor que le puede pasar al
+ * que las falsifica es quedarse sin cookie. El error que sí tiene
+ * consecuencias es el contrario —no detectar el HTTPS que existe— y es
+ * justamente el que ocurre en un hosting real.
+ */
+if (!function_exists('esHttps')) {
+    function esHttps(): bool
+    {
+        if (!empty($_SERVER['HTTPS']) && strtolower((string) $_SERVER['HTTPS']) !== 'off') {
+            return true;
+        }
+        if (strtolower((string) ($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '')) === 'https') {
+            return true;
+        }
+        if (!empty($_SERVER['HTTP_X_FORWARDED_SSL'])
+            && strtolower((string) $_SERVER['HTTP_X_FORWARDED_SSL']) !== 'off') {
+            return true;
+        }
+        return ((string) ($_SERVER['SERVER_PORT'] ?? '')) === '443';
+    }
+}
+/**
  * Arranca la sesión con la cookie endurecida.
  *
  * Debe llamarse ANTES de cualquier salida y en lugar de session_start().
@@ -36,8 +69,7 @@ if (!function_exists('iniciarSesionSegura')) {
         // secure=true sólo si realmente hay HTTPS. Ponerlo fijo en true
         // rompería el login en XAMPP (que sirve por HTTP): el navegador
         // descartaría la cookie y nadie podría iniciar sesión.
-        $esHttps = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
-                || (($_SERVER['SERVER_PORT'] ?? '') === '443');
+        $esHttps = esHttps();
 
         session_set_cookie_params([
             'lifetime' => 0,          // la cookie muere al cerrar el navegador

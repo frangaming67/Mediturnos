@@ -1,0 +1,142 @@
+# =============================================================
+# MediTurnos — configuración de Apache
+# =============================================================
+# Hace falta `AllowOverride All` en la configuración del servidor para
+# que Apache lea este archivo. En un hosting compartido viene activado;
+# en un servidor propio hay que ponerlo a mano — y conviene VERIFICARLO,
+# porque si no se lee, todo lo de acá se ignora en silencio y el sitio
+# parece funcionar igual.
+#
+# Verificación rápida una vez publicado:
+#   https://tu-dominio/sql/     → tiene que dar 403
+#   https://tu-dominio/         → tiene que dar la landing
+# =============================================================
+
+
+# ── Sin listados de directorio ───────────────────────────────
+# Por omisión Apache muestra el contenido de una carpeta que no tiene
+# índice. En este proyecto eso entregaba el árbol completo de archivos a
+# cualquiera: los nombres de los modelos, las migraciones, los guiones de
+# prueba. Y en `almacenamiento/mails/` era peor: ahí se guardan los
+# correos del modo desarrollo, que incluyen ENLACES DE RECUPERACIÓN DE
+# CONTRASEÑA válidos. Se listaban por HTTP sin pedir nada.
+Options -Indexes
+
+
+# ── Archivos que nunca se sirven, esté donde estén ───────────
+# Las carpetas no públicas ya tienen su propio .htaccess. Esto es la
+# segunda barrera, por extensión: cubre el archivo que alguien deje por
+# error en una carpeta que sí se sirve —una copia de seguridad en la
+# raíz, un .sql exportado a mano, un .env— sin que haga falta acordarse
+# de protegerlo.
+<FilesMatch "(?i)\.(sql|sh|bat|ini|log|md|json|lock|yml|yaml|bak|backup|old|orig|save|swp|tmp|dist|example|ejemplo)$">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order deny,allow
+        Deny from all
+    </IfModule>
+</FilesMatch>
+
+# Archivos que empiezan con punto: .env, .git, .htaccess, .gitignore.
+<FilesMatch "^\.">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order deny,allow
+        Deny from all
+    </IfModule>
+</FilesMatch>
+
+
+# ── Errores de PHP: al log, nunca al visitante ───────────────
+# `config/conexion.php` ya lo hace cuando EN_PRODUCCION está en true, y
+# alcanza para todo lo que pasa por la aplicación. Esto cubre el hueco
+# anterior: un error de PARSEO ocurre antes de que PHP ejecute la primera
+# línea, así que ningún ajuste hecho desde PHP llega a aplicarse — y ese
+# mensaje incluye la ruta completa del archivo.
+#
+# Va dentro de <IfModule> porque con PHP en modo FastCGI (lo habitual en
+# hosting compartido) `php_flag` no existe y Apache responde 500 a TODO
+# el sitio. Si tu hosting usa FastCGI, esto no se aplica: ahí la
+# configuración va en el panel o en un `.user.ini`.
+<IfModule mod_php.c>
+    php_flag display_errors off
+    php_flag log_errors on
+    php_flag session.use_strict_mode on
+    php_flag session.cookie_httponly on
+</IfModule>
+<IfModule mod_php7.c>
+    php_flag display_errors off
+    php_flag log_errors on
+</IfModule>
+
+
+# ── Compresión ───────────────────────────────────────────────
+# El CSS del proyecto son unos 150 KB sin comprimir y baja a menos de 30.
+# En un celular con datos móviles la diferencia se nota de verdad.
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE text/html text/plain text/css text/javascript
+    AddOutputFilterByType DEFLATE application/javascript application/json
+    AddOutputFilterByType DEFLATE image/svg+xml
+</IfModule>
+
+
+# ── Caché de lo que no cambia ────────────────────────────────
+# Las hojas de estilo se piden con `?v=<fecha de modificación>` (ver
+# navbar.php), así que un año de caché es seguro: cuando el archivo
+# cambia, cambia la URL y el navegador lo vuelve a pedir. Sin ese
+# parámetro, un año sería una trampa.
+<IfModule mod_expires.c>
+    ExpiresActive On
+    ExpiresByType text/css                "access plus 1 year"
+    ExpiresByType application/javascript  "access plus 1 year"
+    ExpiresByType image/png               "access plus 6 months"
+    ExpiresByType image/jpeg              "access plus 6 months"
+    ExpiresByType image/svg+xml           "access plus 6 months"
+    ExpiresByType image/x-icon            "access plus 1 year"
+    # El HTML no se cachea: lo que muestra depende de quién está en sesión.
+    ExpiresByType text/html               "access plus 0 seconds"
+</IfModule>
+
+
+# ── Cabeceras de seguridad ───────────────────────────────────
+# `includes/seguridad.php` ya manda estas cabeceras desde PHP, y es ahí
+# donde vive la política completa (incluida la CSP). Acá se repiten las
+# tres que también tienen que valer para lo que NO pasa por PHP: una
+# imagen, una hoja de estilo, una página de error de Apache.
+<IfModule mod_headers.c>
+    Header always set X-Content-Type-Options "nosniff"
+    Header always set X-Frame-Options "SAMEORIGIN"
+    Header always set Referrer-Policy "strict-origin-when-cross-origin"
+
+    # HSTS: le dice al navegador que a este dominio entre SIEMPRE por
+    # https, sin siquiera intentar http.
+    #
+    # ⚠️ Descomentar SÓLO cuando el HTTPS esté funcionando y vaya a
+    # seguir funcionando. El navegador recuerda esta orden por un año, y
+    # no hay forma de retirarla antes: si después el certificado vence,
+    # el sitio queda inaccesible para quien ya lo visitó.
+    #
+    # Header always set Strict-Transport-Security "max-age=31536000"
+</IfModule>
+
+
+# ── Redirigir a HTTPS ────────────────────────────────────────
+# Descomentar una vez que el certificado esté activo. Sin HTTPS la cookie
+# de sesión no puede llevar el flag `Secure`, así que viaja en claro: en
+# una red abierta, cualquiera en el medio se queda con la sesión de quien
+# esté usando el sitio.
+#
+# <IfModule mod_rewrite.c>
+#     RewriteEngine On
+#     RewriteCond %{HTTPS} !=on
+#     RewriteCond %{HTTP:X-Forwarded-Proto} !https
+#     RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [R=301,L]
+# </IfModule>
+
+
+# ── Página de inicio ─────────────────────────────────────────
+DirectoryIndex index.php

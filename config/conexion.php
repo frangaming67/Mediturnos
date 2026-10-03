@@ -19,16 +19,59 @@
 // cualquier PC, sin depender de cómo esté configurado el XAMPP de esa máquina.
 date_default_timezone_set('America/Argentina/Buenos_Aires');
 
+// ── Configuración del entorno ────────────────────────────────
+// Si existe config/entorno.php, de ahí salen las credenciales, la
+// BASE_URL y el modo producción. Ese archivo NO se versiona (lleva la
+// contraseña de la base); la plantilla es config/entorno.ejemplo.php.
+//
+// POR QUÉ ASÍ Y NO EDITANDO ESTE ARCHIVO
+// Mientras hubo un solo entorno —el XAMPP de desarrollo— tener las
+// credenciales escritas acá no molestaba. Con el sitio publicado hay
+// dos, distintos en todo, y editar este archivo en cada despliegue es
+// exactamente cómo un día terminan las credenciales de producción
+// dentro del repositorio.
+$rutaEntorno = __DIR__ . '/entorno.php';
+if (is_file($rutaEntorno)) {
+    require_once $rutaEntorno;
+}
+
 // Constantes de conexión: van como define() (globales, no cambian en
 // tiempo de ejecución) y no como variables, porque BASE_URL en particular
 // se usa en decenas de vistas para armar enlaces (echo corto de PHP) y
 // necesita estar disponible sin tener que pasarla como parámetro por
 // todos lados.
-define('DB_HOST', 'localhost');
-define('DB_NAME', 'mediturnos');
-define('DB_USER', 'root');
-define('DB_PASS', '');
-define('BASE_URL', '/mediturnos/');
+//
+// El `defined() ||` hace que estos sean VALORES POR OMISIÓN: se aplican
+// sólo a lo que entorno.php no haya definido. Un clon recién hecho corre
+// en XAMPP sin configurar nada, que es como venía funcionando.
+defined('DB_HOST')  || define('DB_HOST', 'localhost');
+defined('DB_NAME')  || define('DB_NAME', 'mediturnos');
+defined('DB_USER')  || define('DB_USER', 'root');
+defined('DB_PASS')  || define('DB_PASS', '');
+defined('BASE_URL') || define('BASE_URL', '/mediturnos/');
+
+// ── Errores: a la vista en desarrollo, al log en producción ───
+// Un error de PHP sin capturar imprime la ruta del archivo, el número de
+// línea y a veces un fragmento de la consulta: es un mapa del sistema
+// regalado a quien sepa provocarlo. Pero en desarrollo esos mensajes son
+// justamente lo que permite arreglar las cosas.
+//
+// Se configura acá y no en el php.ini porque en un hosting compartido no
+// siempre se puede tocar el php.ini — y porque así la configuración
+// viaja con el proyecto en vez de depender de cómo está el servidor.
+defined('EN_PRODUCCION') || define('EN_PRODUCCION', false);
+defined('RUTA_LOG')      || define('RUTA_LOG', '');
+
+// error_reporting queda en E_ALL en los dos casos: lo que cambia es
+// QUIÉN ve los errores, no si se registran. Bajarlo en producción sería
+// dejar de enterarse de los problemas, que es lo contrario de lo que se
+// busca.
+error_reporting(E_ALL);
+ini_set('display_errors', EN_PRODUCCION ? '0' : '1');
+ini_set('log_errors', '1');
+if (RUTA_LOG !== '') {
+    ini_set('error_log', RUTA_LOG);
+}
 
 // El try/catch está acá y no en cada archivo que usa $pdo porque es el
 // único punto donde la conexión puede fallar (servidor MySQL apagado,

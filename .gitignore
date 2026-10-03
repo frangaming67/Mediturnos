@@ -9,6 +9,12 @@
 # (config/mail.ejemplo.php), sin datos reales.
 config/mail.php
 
+# config/entorno.php lleva la contraseña de la base de producción y la
+# BASE_URL del servidor. Se versiona sólo la plantilla
+# (config/entorno.ejemplo.php). Sin este archivo el proyecto corre con
+# los valores de XAMPP, así que un clon no necesita configurar nada.
+config/entorno.php
+
 # ── Correos generados en modo desarrollo ─────────────────────
 # Son mails de prueba con enlaces de recuperación válidos.
 almacenamiento/mails/*.html
