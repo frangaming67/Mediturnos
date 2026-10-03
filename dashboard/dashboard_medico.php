@@ -33,6 +33,13 @@ if ($matricula <= 0) {
 $hoy = date('Y-m-d');
 
 $kpis      = $modelo->kpisMedico($matricula, $hoy);
+
+// Los pedidos de renovación no son un turno del día, pero son trabajo
+// pendiente del profesional y es acá donde empieza su jornada. El
+// contador va en el panel y no en el menú lateral: ponerlo en el menú
+// significaría esta misma consulta en CADA página del sistema.
+require_once __DIR__ . '/../sistema/modelos/Receta.php';
+$renovPendientes = (new Receta($pdo))->pendientesDeMedico($matricula);
 $agenda    = $modelo->agendaMedico($matricula, $hoy);
 $semana    = $modelo->citasSemanaMedico($matricula);
 $busqueda  = trim($_GET['q'] ?? '');
@@ -103,6 +110,21 @@ $totalSemana = array_sum(array_column($semana, 'cantidad'));
         <span class="kpi-valor" style="color:var(--gris)"><?= (int) $kpis['ausentes'] ?></span>
         <span class="kpi-pie">No se presentaron</span>
     </div>
+    <?php // La tarjeta es un enlace sólo cuando hay algo que resolver:
+          // un "0" que se puede clickear lleva a una bandeja vacía. ?>
+    <?php if ($renovPendientes > 0): ?>
+    <a class="kpi-card" href="<?= BASE_URL ?>sistema/controladores/ControladorReceta.php?accion=renovaciones">
+        <span class="kpi-label">Renovaciones</span>
+        <span class="kpi-valor" style="color:var(--amarillo)"><?= $renovPendientes ?></span>
+        <span class="kpi-pie">Pedidos esperando tu respuesta</span>
+    </a>
+    <?php else: ?>
+    <div class="kpi-card">
+        <span class="kpi-label">Renovaciones</span>
+        <span class="kpi-valor" style="color:var(--gris)">0</span>
+        <span class="kpi-pie">Sin pedidos pendientes</span>
+    </div>
+    <?php endif; ?>
 </div>
 
 <div class="med-cols">

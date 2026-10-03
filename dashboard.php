@@ -43,6 +43,24 @@ if ($rol === 'paciente') {
 // require_once y el riesgo de que un rol lo tenga y el otro no).
 require_once __DIR__ . '/sistema/vistas/layouts/navbar.php';
 
+// ── Errores que llegan de otra pantalla ──────────────────────
+// Varios controladores vuelven acá con ?err= cuando lo que pedía la
+// persona ya no existe o no le corresponde: `turnoDelMedico()` lo hace
+// con un turno inexistente, y ControladorReceta con una receta que no
+// está. El mensaje se muestra ACÁ, una sola vez para los tres roles.
+//
+// Antes sólo lo mostraba el panel del paciente, así que a un médico que
+// entraba a un enlace viejo el aviso se le perdía: veía su agenda normal
+// y nunca se enteraba de por qué no había llegado a donde iba. Es la
+// misma falla que ya había aparecido en el perfil.
+//
+// is_string: un `?err[]=x` haría que urldecode() reciba un arreglo y
+// devuelva un 500 — la pantalla de error, rota por el error.
+if (is_string($_GET['err'] ?? null) && $_GET['err'] !== '') {
+    echo '<div class="alerta alerta-error" role="alert">'
+       . htmlspecialchars(urldecode($_GET['err'])) . '</div>';
+}
+
 // Esta es la única bifurcación por rol de todo el archivo: el dashboard
 // del paciente (reservar turno) y el del staff (KPIs + agenda + gestión)
 // son pantallas tan distintas en contenido que no tiene sentido meterlas

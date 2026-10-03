@@ -320,6 +320,13 @@ class Receta
         return "SELECT r.*,
                    CONCAT(m.apellido, ', ', m.nombre) AS medico,
                    m.estado                           AS medico_estado,
+                   -- El paciente va en el SELECT y no se deja que lo
+                   -- resuelva la vista: la ficha que ve el médico y la
+                   -- receta impresa tienen que decir a nombre de quién
+                   -- está, y leerlo de la sesión sólo funcionaría para
+                   -- el propio paciente.
+                   CONCAT(p.apellido, ', ', p.nombre) AS paciente,
+                   p.dni                              AS paciente_dni,
                    e.nombre                           AS especialidad,
                    CASE WHEN r.estado = 'Anulada'      THEN 'Anulada'
                         WHEN r.vence_el < CURDATE()    THEN 'Vencida'
@@ -337,7 +344,8 @@ class Receta
                      WHERE ra.id_receta = r.id_receta
                        AND ra.estado = 'Aprobada')      AS renov_aprobada
                 FROM   receta r
-                JOIN   medico m        ON m.matricula = r.matricula
+                JOIN   medico   m      ON m.matricula   = r.matricula
+                JOIN   paciente p      ON p.id_paciente = r.id_paciente
                 LEFT   JOIN turno t    ON t.id_turno  = r.id_turno
                 LEFT   JOIN especialidad e ON e.id_especialidad = t.id_especialidad";
     }
@@ -383,7 +391,13 @@ class Receta
         // Son las mismas personas que ya cargan pacientes y cobran
         // turnos; negarles la receta no protegería nada y rompería el
         // mostrador.
-        return in_array($rol, ['admin', 'recepcion'], true);
+        //
+        // El rol se llama 'recepcionista' —así está en la tabla `rol` y
+        // así lo compara Historial::puedeVerEstudio()—. Escribirlo
+        // 'recepcion' no da error en ningún lado: simplemente devuelve
+        // false para siempre, y el mostrador se queda afuera sin que
+        // nada lo avise.
+        return in_array($rol, ['admin', 'recepcionista'], true);
     }
 
     // =============================================================

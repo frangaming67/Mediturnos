@@ -28,6 +28,14 @@ $modelo->marcarRealizadosAutomaticamente();
 
 $proximos = $idPaciente > 0 ? $modelo->proximosDePaciente($idPaciente, 4) : [];
 $resumen  = $idPaciente > 0 ? $modelo->resumenPaciente($idPaciente)       : [];
+
+// Las recetas que están por vencer son el único dato de la etapa 5 que
+// el panel necesita: es lo que le dice al paciente que pida la
+// renovación ANTES de quedarse sin medicación. Es UNA consulta con
+// cuatro contadores, no una por número.
+require_once __DIR__ . '/../sistema/modelos/Receta.php';
+$recetas = $idPaciente > 0 ? (new Receta($pdo))->resumenPaciente($idPaciente)
+                           : ['total' => 0, 'vigentes' => 0, 'por_vencer' => 0];
 $proxima  = $proximos[0] ?? null;
 $otras    = array_slice($proximos, 1);
 
@@ -56,8 +64,14 @@ function cuandoEs(string $fecha): string
 $claseBadge = fn(string $estado) => 'badge-' . mb_strtolower($estado);
 ?>
 
-<?php if (!empty($_GET['msg']) || !empty($_GET['err'])): ?>
-<div class="alerta alerta-<?= !empty($_GET['err']) ? 'error' : 'exito' ?>" role="alert">
+<?php // Sólo los avisos de ÉXITO. Los errores los muestra dashboard.php
+      // antes de esta bifurcación, para que lleguen también al médico y
+      // al administrador — antes se perdían en esos dos roles.
+      //
+      // is_string: un `?msg[]=x` haría que la búsqueda en el arreglo
+      // reciba un arreglo como clave, que es un error fatal. ?>
+<?php if (is_string($_GET['msg'] ?? null) && $_GET['msg'] !== ''): ?>
+<div class="alerta alerta-exito" role="alert">
     <?php
     $avisos = [
         'cancelado'    => 'Tu turno fue cancelado.',
@@ -65,11 +79,7 @@ $claseBadge = fn(string $estado) => 'badge-' . mb_strtolower($estado);
         'reservado'    => 'Turno reservado.',
         'pagado'       => 'El pago se registró correctamente.',
     ];
-    echo htmlspecialchars(
-        !empty($_GET['err'])
-            ? urldecode($_GET['err'])
-            : ($avisos[$_GET['msg']] ?? 'Listo.')
-    );
+    echo htmlspecialchars($avisos[$_GET['msg']] ?? 'Listo.');
     ?>
 </div>
 <?php endif; ?>
@@ -234,6 +244,24 @@ $claseBadge = fn(string $estado) => 'badge-' . mb_strtolower($estado);
             <?= ($resumen['pagos_pendientes'] ?? 0) > 0
                 ? (int) $resumen['pagos_pendientes'] . ' pendiente' . ($resumen['pagos_pendientes'] > 1 ? 's' : '')
                 : 'Sin pagos pendientes' ?>
+        </span>
+    </a>
+
+    <a class="pac-acceso" href="<?= BASE_URL ?>recetas.php">
+        <span class="pac-acceso-ico <?= $recetas['por_vencer'] > 0 ? 'pac-ico-amarillo' : 'pac-ico-verde' ?>" aria-hidden="true">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M9 15h6M12 12v6"/></svg>
+        </span>
+        <strong>Mis recetas</strong>
+        <span>
+            <?php // El aviso de "vence pronto" gana al conteo de vigentes:
+                  // es lo único que pide una acción de parte del paciente. ?>
+            <?php if ($recetas['por_vencer'] > 0): ?>
+                <?= $recetas['por_vencer'] ?> vence<?= $recetas['por_vencer'] === 1 ? '' : 'n' ?> esta semana
+            <?php elseif ($recetas['vigentes'] > 0): ?>
+                <?= $recetas['vigentes'] ?> vigente<?= $recetas['vigentes'] === 1 ? '' : 's' ?>
+            <?php else: ?>
+                Prescripciones y renovaciones
+            <?php endif; ?>
         </span>
     </a>
 

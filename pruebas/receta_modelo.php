@@ -118,7 +118,8 @@ chkq("el médico que firmó la ve",         $m->puedeVer($r1, 'medico', null, $m
 chkq("otro médico que NO atendió, no",   !$m->puedeVer($r1, 'medico', null, $otro, false));
 chkq("otro médico que SÍ atendió, sí",    $m->puedeVer($r1, 'medico', null, $otro, true));
 chkq("admin sí",                          $m->puedeVer($r1, 'admin', null, null));
-chkq("recepcion sí",                      $m->puedeVer($r1, 'recepcion', null, null));
+chkq("recepcionista sí",                  $m->puedeVer($r1, 'recepcionista', null, null));
+chkq("el rol mal escrito NO pasa",       !$m->puedeVer($r1, 'recepcion', null, null));
 chkq("un rol inventado no",              !$m->puedeVer($r1, 'cualquiera', null, null));
 
 // =============================================================
