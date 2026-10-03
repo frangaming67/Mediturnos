@@ -73,6 +73,9 @@ limpiar() {
     echo
     echo "-- LIMPIEZA ------------------------------------------"
     $MYSQL -e "DELETE FROM estudio WHERE nombre LIKE 'PRUEBA-H%';"
+    # Y los avisos que esos estudios emitieron.
+    $MYSQL -e "DELETE FROM notificacion WHERE tipo='estudio_pedido'
+               AND creada_en >= DATE_SUB(NOW(), INTERVAL 1 HOUR);"
     chk "estudios de prueba borrados" "0" \
         "$(my "SELECT COUNT(*) FROM estudio WHERE nombre LIKE 'PRUEBA-H%';")"
     chk "los 48 turnos siguen ahí" "48" "$(my "SELECT COUNT(*) FROM turno;")"

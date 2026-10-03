@@ -199,6 +199,14 @@ restaurar() {
     # Las recetas creadas por la prueba se borran; el CASCADE se lleva
     # los medicamentos y las renovaciones.
     $MYSQL -e "DELETE FROM receta WHERE id_paciente=$PACIENTE;"
+    # Y los avisos que esas recetas emitieron. Antes quedaban en la base
+    # apuntando a filas que ya no existen: ciento nueve, al cabo de unas
+    # cuantas corridas. El borrado de la receta no se los lleva porque
+    # \`notificacion\` no tiene clave foránea hacia ella — y no debe
+    # tenerla: un aviso sobrevive a lo que lo originó a propósito.
+    $MYSQL -e "DELETE FROM notificacion
+               WHERE id_usuario IN ($PAC_ID, $OTRO_PAC_ID, $OTRO_MED_ID)
+                  OR id_usuario = (SELECT id_usuario FROM usuario WHERE usuario='cfernandez');"
     local quedan
     quedan="$(my "SELECT COUNT(*) FROM receta WHERE id_paciente=$PACIENTE;")"
     chk "recetas de prueba borradas" "0" "$quedan"
