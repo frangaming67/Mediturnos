@@ -52,7 +52,7 @@ switch ($accion) {
     // ── Guardar la ficha ─────────────────────────────────────
     case 'guardarConsulta':
         verificarRol(['medico']);
-        csrf_verificar();
+        csrf_post();
 
         $turno = turnoDelMedico($modeloTurno, (int) ($_POST['id_turno'] ?? 0));
         $volver = $URL . '?accion=consulta&id=' . (int) $turno['id_turno'];
@@ -113,7 +113,7 @@ switch ($accion) {
     // ── Pedir un estudio ─────────────────────────────────────
     case 'pedirEstudio':
         verificarRol(['medico']);
-        csrf_verificar();
+        csrf_post();
 
         $turno  = turnoDelMedico($modeloTurno, (int) ($_POST['id_turno'] ?? 0));
         $volver = $URL . '?accion=consulta&id=' . (int) $turno['id_turno'];
@@ -160,7 +160,7 @@ switch ($accion) {
     // ── Adjuntar el resultado de un estudio ──────────────────
     case 'subirResultado':
         verificarRol(['medico']);
-        csrf_verificar();
+        csrf_post();
 
         $turno  = turnoDelMedico($modeloTurno, (int) ($_POST['id_turno'] ?? 0));
         $volver = $URL . '?accion=consulta&id=' . (int) $turno['id_turno'];

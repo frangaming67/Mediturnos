@@ -107,8 +107,13 @@ function csrf_field(): void
 }
 
 /**
- * Valida el token en peticiones POST. Si no coincide, corta la ejecución.
- * Llamar al inicio de los controladores que procesan formularios.
+ * Valida el token SI la petición es POST. Si no coincide, corta.
+ *
+ * Pensada para llamarse UNA vez al principio de un controlador que
+ * mezcla listados (GET) con formularios (POST): deja pasar los GET,
+ * porque un listado no lleva token.
+ *
+ * ⚠️ NO alcanza para proteger una acción concreta. Ver csrf_post().
  */
 function csrf_verificar(): void
 {
@@ -120,6 +125,48 @@ function csrf_verificar(): void
         http_response_code(403);
         die('Token de seguridad inválido. Recargá la página e intentá de nuevo.');
     }
+}
+
+/**
+ * Exige POST **y** token válido. Para las acciones que CAMBIAN algo.
+ *
+ * ── 🚨 POR QUÉ HACE FALTA, Y NO ALCANZA csrf_verificar() ─────
+ * csrf_verificar() deja pasar todo lo que no sea POST. Eso es correcto
+ * donde se usa —al principio de un controlador que también sirve
+ * listados— pero es una trampa cuando se la llama dentro de una acción
+ * que modifica datos: si la petición llega por GET, el token no se
+ * verifica y la acción se ejecuta igual.
+ *
+ * Y una acción que funciona por GET no necesita ningún formulario para
+ * dispararse. Basta que la persona, con su sesión abierta, abra una
+ * página cualquiera que contenga:
+ *
+ *     <img src="https://elsitio/.../Controlador...php?accion=eliminarLeidas">
+ *
+ * El navegador pide esa imagen con las cookies de la sesión, y la acción
+ * corre. No hay nada que la persona pueda notar: es una imagen que no
+ * carga.
+ *
+ * Estaba comprobado contra el servidor local: un GET sin token a
+ * `?accion=eliminarLeidas` devolvía 302 y borraba las notificaciones.
+ *
+ * Exigir POST cierra eso de raíz, porque una etiqueta <img>, un <link> o
+ * una redirección no pueden hacer un POST. El token sigue siendo
+ * necesario para el caso en que sí haya un formulario preparado en otro
+ * sitio.
+ *
+ * Las dos condiciones son necesarias y ninguna sobra:
+ *   · sólo POST, sin token → un formulario ajeno lo dispara;
+ *   · sólo token, cualquier método → una etiqueta <img> lo dispara.
+ */
+function csrf_post(): void
+{
+    if (($_SERVER['REQUEST_METHOD'] ?? 'GET') !== 'POST') {
+        http_response_code(405);   // Method Not Allowed
+        header('Allow: POST');
+        die('Esta operación se hace enviando el formulario, no abriendo una dirección.');
+    }
+    csrf_verificar();
 }
 
 /**
