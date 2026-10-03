@@ -26,6 +26,12 @@
 # convertía a CRLF en cada checkout bajo Windows.
 *.sh   text eol=lf
 
+# .htaccess va a un servidor Linux. Con CRLF, el `` queda pegado al
+# final del valor de cada directiva: `DirectoryIndex index.php` busca
+# un archivo que no existe, y un `Header set` termina mandando la
+# cabecera con un carácter de más.
+.htaccess text eol=lf
+
 # Los .bat de Windows necesitan CRLF sí o sí
 *.bat  text eol=crlf
 
