@@ -31,7 +31,7 @@ caiga a Times si Google Fonts no carga.
 | `landing.css` | Sólo la landing (autocontenido) |
 | `auth.css` | Login, registro y recuperación **+ widgets de formulario reutilizables** |
 | `perfil.css` | Sólo "Mi perfil" |
-| `paciente.css` | Área del Paciente: inicio, detalle de turno, reprogramación |
+| `paciente.css` | Área del Paciente: inicio, detalle de turno, reprogramación, asistente de reserva, pago, historial y recetas |
 | `utilidades.css` | Helpers de una sola propiedad, para evitar estilos en línea |
 
 Están separados por **responsabilidad**, no por rendimiento: los tres primeros se
@@ -120,3 +120,20 @@ Sin librerías. Cada script vive donde se usa:
 
 **Regla no negociable:** todo dato que venga de la base se escribe con
 `textContent`. Nunca `innerHTML`.
+
+### Un control que agrega JavaScript nace oculto
+
+El botón "Agregar otro medicamento" del formulario de recetas clona un renglón.
+Está en el HTML con `display:none` y lo muestra **el propio script**:
+
+```php
+<button type="button" id="btnOtro" style="display:none">+ Agregar otro medicamento</button>
+```
+```js
+boton.style.display = "";   // recién acá existe de verdad
+```
+
+Si el JavaScript no corre, no queda un botón que no hace nada —el peor resultado
+posible, porque la persona piensa que la aplicación está rota—: quedan los tres
+renglones del formulario, que alcanzan para prescribir. El script es comodidad,
+nunca el único camino. Ver [recetas.md](recetas.md).

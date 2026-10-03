@@ -123,6 +123,35 @@ Existe el equivalente `slot_consultorio` / `uq_turno_consultorio`, porque el pri
 sólo miraba el médico: dos profesionales distintos podían quedar asignados al mismo
 consultorio a la misma hora.
 
+### El mismo recurso, otra vez: un solo pedido de renovación
+
+`renovacion_receta.pendiente_unica` (migración 18) repite la idea para un problema
+distinto. Dos clics rápidos en "Solicitar renovación" son dos peticiones a la vez:
+las dos consultan si hay alguna pendiente, las dos leen que no, y las dos
+insertan.
+
+```sql
+pendiente_unica INT GENERATED ALWAYS AS
+                (IF(estado = 'Pendiente', id_receta, NULL)) STORED,
+UNIQUE KEY uq_renov_pendiente (pendiente_unica)
+```
+
+Vale el id de la receta mientras el pedido está pendiente y `NULL` en cuanto se
+resuelve. Así se puede pedir la renovación de la misma receta cuantas veces se
+quiera a lo largo del tiempo, pero **nunca hay dos pendientes al mismo tiempo**.
+
+Que sea la tercera vez que aparece el recurso no es casualidad: "una sola fila
+activa por clave, con historial" es la forma que toma casi toda regla de
+exclusión de este dominio, y el motor la resuelve sin una línea de PHP. El
+detalle, en [recetas.md](recetas.md).
+
+### Lo que un UNIQUE no puede cubrir
+
+Dos pestañas del médico aprobando el mismo pedido no son dos `INSERT`, son dos
+`UPDATE` sobre la misma fila: el índice no los ve. Ahí la garantía es un
+`SELECT ... FOR UPDATE` dentro de la transacción, que bloquea la fila hasta el
+`commit` — `Receta::resolverRenovacion()`.
+
 ## Vistas
 
 | Vista | Uso |
@@ -190,6 +219,7 @@ Ejecutar **en este orden** (cada una asume la anterior):
 | 15 | `calificaciones.sql` | Calificación de profesionales |
 | 16 | `historial_clinico.sql` | Consultas y estudios |
 | 17 | `collation_unificada.sql` | Alinea el collation de las tablas nuevas |
+| 18 | `recetas.sql` | Recetas, sus medicamentos y el circuito de renovación |
 
 ## Defectos de esquema corregidos en `auth_v2.sql`
 

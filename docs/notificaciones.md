@@ -78,7 +78,8 @@ correo**.
 | `turno_reservado` · `turno_confirmado` · `turno_cancelado` · `turno_reprogramado` | ✅ | Afectan un compromiso con fecha y hora |
 | `turno_recordatorio` · `pago_por_vencer` | ✅ | Sirven justamente para llegar fuera de la app |
 | `pago_aprobado` · `pago_rechazado` | ✅ | Involucran dinero |
-| `resultados_listos` · `receta_nueva` · `refill_*` | ✅ | Información clínica que se espera |
+| `estudio_pedido` · `resultados_listos` | ✅ | Información clínica que se espera |
+| `receta_nueva` · `receta_anulada` · `refill_*` | ✅ | Una receta anulada hay que saberla **antes** de ir a la farmacia |
 | `cuenta_password` · `cuenta_email` | ✅ | **Si no fue la persona, ese correo es el único modo de que se entere a tiempo** |
 | `mensaje_medico` · `cuenta_datos` | ❌ | No justifican interrumpir a nadie en su bandeja |
 
@@ -88,6 +89,19 @@ correo**.
 
 Los tipos viven en PHP y la columna `tipo` es `VARCHAR`, no `ENUM`: agregar un
 aviso nuevo va a pasar seguido, y con `ENUM` cada uno obligaría a un `ALTER TABLE`.
+La etapa 5 agregó dos sin tocar el esquema, que es exactamente para lo que estaba
+pensado.
+
+### Un tipo reusado que no se podía seguir reusando
+
+Pedir un estudio avisaba con `receta_nueva`. Funcionaba —y nadie lo notó—
+**sólo porque las recetas todavía no existían**. En cuanto existieron, el paciente
+veía "te pidieron un estudio" con el icono de una receta y los dos avisos eran
+indistinguibles en el listado.
+
+Es el costo típico de reusar un tipo "parecido" para salir del paso: no falla
+hasta que aparece el caso de verdad, y entonces falla en la pantalla del
+usuario.
 
 ## Decisiones de la tabla
 

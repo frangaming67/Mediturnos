@@ -9,6 +9,23 @@ Versionado según [SemVer](https://semver.org/lang/es/).
 
 ### Agregado
 
+**Recetas y renovaciones** — ver [recetas.md](recetas.md)
+- Tablas `receta`, `receta_medicamento` y `renovacion_receta`
+- **Lado del médico**: emitir una receta con varios medicamentos (nombre,
+  presentación, dosis, frecuencia, duración y envases), anularla, y una bandeja
+  con los pedidos de renovación de sus pacientes
+- **Lado del paciente**: sus recetas con la vigencia resuelta, el documento
+  imprimible, y el pedido de renovación en un solo paso
+- Aprobar un pedido **emite una receta nueva** copiando los medicamentos: no le
+  toca el vencimiento a la original, que sería reescribir la historia clínica
+- La vigencia **se deduce de la fecha**, no está guardada: no hace falta ninguna
+  tarea que la mantenga al día y la fila nunca miente
+- Dos pedidos pendientes de la misma receta los frena el motor, con el mismo
+  recurso que la doble reserva de turnos (columna generada + `UNIQUE`)
+- El documento aclara, **dentro** del propio papel, que no reemplaza a una
+  receta con firma del profesional
+- `pruebas/` versionada: 81 comprobaciones del modelo y 96 por HTTP
+
 **Historial clínico** — ver [historial-clinico.md](historial-clinico.md)
 - Tablas `consulta` y `estudio`: el historial se llena con datos reales
 - **Lado del médico**: ficha clínica sobre un turno atendido (motivo,
@@ -78,6 +95,19 @@ Versionado según [SemVer](https://semver.org/lang/es/).
 
 ### Corregido
 
+- **Los errores se perdían para el médico y el administrador.** Varios
+  controladores vuelven al panel con `?err=`, pero sólo el panel del paciente
+  mostraba el mensaje. Un médico que entraba a un enlace viejo veía su agenda
+  normal y nunca se enteraba de por qué no había llegado a donde iba. El aviso
+  pasó a `dashboard.php`, antes de la bifurcación por rol.
+- **Pedir un estudio avisaba con el tipo de aviso de una receta.** Funcionaba
+  sólo porque las recetas todavía no existían: en cuanto existieron, el paciente
+  veía "te pidieron un estudio" con el icono de una receta y no había forma de
+  distinguir los dos avisos. Ahora tiene su propio tipo.
+- **`turnoDelMedico()` estaba por duplicarse.** Es el control que verifica que un
+  turno sea del profesional de la sesión, y la etapa 5 necesitaba el mismo en un
+  segundo controlador. Se movió a `includes/guardias.php`: duplicar un control de
+  autorización es exactamente cómo se reabre un agujero ya cerrado.
 - **Turnos gratis.** El formulario de reserva ofrecía las quince obras sociales
   del sistema y nadie verificaba que la elegida fuera del paciente. Como IOMA
   tiene 100% de descuento con una de las médicas, cualquiera podía sacar un
