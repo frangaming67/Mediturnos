@@ -5,6 +5,7 @@ Guiones de verificación que se ejecutan a mano desde la línea de comandos.
 ```bash
 php pruebas/receta_modelo.php     # 81 comprobaciones del modelo
 bash pruebas/receta_http.sh       # 96 comprobaciones por HTTP
+bash pruebas/humo.sh              # 24 pantallas, en los tres roles
 ```
 
 Cada uno imprime una línea por comprobación y termina con el total. El código
@@ -15,6 +16,7 @@ un script o, el día que lo haya, en un *pipeline*.
 |---|---|---|
 | `receta_modelo.php` | Las reglas de negocio y las garantías del motor (`CHECK`, `UNIQUE`, columnas generadas, `ON DELETE CASCADE`) | MySQL |
 | `receta_http.sh` | Lo que sólo se ve entrando al sitio: roles, CSRF, IDOR, escapado en el HTML, redirecciones | MySQL, Apache y Git Bash |
+| `humo.sh` | Que ninguna pantalla devuelva un código inesperado ni imprima un aviso de PHP, en los tres roles | MySQL, Apache y Git Bash |
 
 ## Por qué están versionados acá
 
@@ -22,6 +24,13 @@ Durante las primeras etapas estos guiones se escribían en la carpeta temporal
 del sistema. Funcionó mientras duró la sesión y se perdieron todos: más de
 quinientas comprobaciones de las etapas 1 a 4 que hoy no se pueden volver a
 ejecutar. Lo que no está en el repositorio, no existe.
+
+### Por qué `humo.sh` mira los avisos de PHP y no sólo el código
+
+Un `Warning` o un `Notice` no cambia el código de respuesta: la página devuelve
+200 con el aviso escrito arriba del contenido, y ahí se queda hasta que alguien
+lo ve de casualidad. Un parámetro de la URL que llega como arreglo donde se
+esperaba texto es exactamente eso, y por eso está entre las comprobaciones.
 
 ## Qué NO son
 
