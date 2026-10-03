@@ -9,6 +9,16 @@ Versionado según [SemVer](https://semver.org/lang/es/).
 
 ### Agregado
 
+**Historial clínico** — ver [historial-clinico.md](historial-clinico.md)
+- Tablas `consulta` y `estudio`: el historial se llena con datos reales
+- **Lado del médico**: ficha clínica sobre un turno atendido (motivo,
+  diagnóstico, indicaciones), pedido de estudios y carga de resultados
+- **Lado del paciente**: línea de tiempo con consultas y estudios mezclados,
+  con filtros por tipo, texto y rango de fechas
+- Los resultados viven **fuera de la carpeta pública** y se entregan sólo
+  después de verificar quién los pide: el dueño, su médico tratante o el staff
+- Los correos de resultados **no adjuntan el archivo**: piden entrar a la cuenta
+
 **Pago y confirmación** — ver [area-paciente.md](area-paciente.md)
 - Dos plazos de retención: 15 minutos si paga con tarjeta ahora, 48 horas si
   elige pagar más tarde o en recepción
@@ -81,6 +91,11 @@ Versionado según [SemVer](https://semver.org/lang/es/).
 - **Al reservar no se verificaba que el horario siguiera ofreciéndose.** Ahora
   se contrasta contra `obtenerSlots()`, que cubre de una vez profesional
   activo, ausencias, horario existente, ocupación y horarios pasados.
+- **Dos collations conviviendo en el mismo esquema.** `notificacion` y
+  `calificacion` se crearon con `utf8mb4_unicode_ci` mientras el resto de la
+  base usa `utf8mb4_general_ci`. Mientras se consultaron solas no se notó;
+  al unirlas con tablas viejas, MySQL rechaza la consulta entera con
+  *Illegal mix of collations*. Las tres tablas nuevas quedaron alineadas.
 - **Los correos a `@example.com` llenaban de rebotes la casilla del sistema.**
   Los datos de prueba usan direcciones de dominios reservados que por norma no
   pueden recibir correo. Ahora se descartan antes de intentar el envío.

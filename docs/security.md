@@ -19,6 +19,7 @@
 | Contraseñas | ✅ | bcrypt vía `password_hash` |
 | Campos enviados como array | ⚠️ Parcial | Cubierto en el perfil (`ControladorPerfil::texto()`). Los formularios anteriores todavía asumen texto |
 | Manipulación de precio | ✅ | La cobertura del turno se valida contra las del paciente — ver abajo |
+| Acceso a datos de salud | ✅ | Los resultados viven fuera de la carpeta pública y se entregan sólo tras verificar quién los pide |
 
 ## Consultas preparadas
 
@@ -103,6 +104,30 @@ y no crea ningún turno. Detalle completo en [area-paciente.md](area-paciente.md
 > **Lección:** al auditar, mirar también qué opciones ofrece un formulario. Un
 > desplegable con más opciones de las que corresponden es una autorización que
 > nadie escribió.
+
+## Archivos que no tienen URL
+
+Las fotos de perfil se sirven por URL pública y están bien así: el módulo de
+subida **re-codifica** cada imagen con GD, de modo que el archivo final lo genera
+el servidor y no puede contener nada escondido.
+
+Con un resultado de laboratorio eso no se puede hacer — es un PDF, y
+re-generarlo pierde justamente lo que importa. Como no se puede neutralizar el
+contenido, la defensa se mueve a **dónde vive el archivo**:
+
+```
+publico/img/perfiles/     → dentro del sitio, con URL           (fotos)
+almacenamiento/estudios/  → FUERA del sitio, sin URL alguna     (estudios)
+```
+
+Se entregan desde `ControladorHistorial.php?accion=descargar`, que verifica quién
+pide **antes de emitir un solo byte**, y sólo a tres perfiles: el paciente dueño,
+un médico que lo atendió alguna vez, y el staff.
+
+**Verificado:** la URL directa al archivo devuelve `403`; otro paciente recibe
+`403` y no recibe el PDF; un médico que nunca lo atendió, tampoco.
+
+Detalle completo en [historial-clinico.md](historial-clinico.md).
 
 ## IDOR: el id que nunca sale del servidor
 

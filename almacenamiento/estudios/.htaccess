@@ -1,0 +1,10 @@
+# Resultados de estudios médicos.
+#
+# A diferencia de las fotos de perfil, esto NO se sirve nunca por URL
+# directa: es información de salud. Se transmite desde PHP
+# (ControladorHistorial.php?accion=descargar) que primero verifica que
+# quien lo pide sea el paciente dueño, su médico o el staff.
+#
+# Este archivo es la segunda barrera: aunque alguien adivinara el nombre
+# aleatorio, Apache no le entrega nada.
+Require all denied

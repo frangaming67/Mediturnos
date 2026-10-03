@@ -120,6 +120,8 @@ mysql -u root --default-character-set=utf8mb4 mediturnos < perfil.sql
 mysql -u root --default-character-set=utf8mb4 mediturnos < notificaciones.sql
 mysql -u root --default-character-set=utf8mb4 mediturnos < reprogramacion.sql
 mysql -u root --default-character-set=utf8mb4 mediturnos < calificaciones.sql
+mysql -u root --default-character-set=utf8mb4 mediturnos < historial_clinico.sql
+mysql -u root --default-character-set=utf8mb4 mediturnos < collation_unificada.sql
 ```
 
 > El orden importa: cada migración asume la anterior. `perfil.sql` es la última y
@@ -242,6 +244,7 @@ mediturnos/
 ├── dashboard.php           Router por rol
 ├── perfil.php              Mi perfil (foto, datos, cobertura, contraseña)
 ├── agendar.php             Reserva de turno del paciente
+├── historial.php           Historial médico del paciente
 │
 ├── config/
 │   ├── conexion.php        Conexión PDO + zona horaria

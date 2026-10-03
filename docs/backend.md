@@ -19,6 +19,7 @@ SQL**. Reciben el `PDO` por constructor.
 | `Perfil` | Datos que cada usuario edita de su propia cuenta |
 | `Notificacion` | Centro de avisos: alta, lectura, filtros, borrado |
 | `Calificacion` | Puntaje y comentario de una consulta ya realizada |
+| `Historial` | Consultas y estudios: la línea de tiempo clínica del paciente |
 
 ### Convenciones
 
@@ -166,6 +167,7 @@ try {
 | `includes/email_plantilla.php` | Diseño único de todos los correos |
 | `includes/mailer.php` | Envío de correo con dos implementaciones |
 | `includes/subida_imagen.php` | Subida y procesamiento seguro de imágenes |
+| `includes/subida_estudio.php` | Resultados médicos: fuera de la carpeta pública — ver [historial-clinico.md](historial-clinico.md) |
 
 `auth.php` y `seguridad.php` están separados a propósito: el primero responde
 preguntas de negocio (quién sos, qué podés hacer) y el segundo aplica medidas de

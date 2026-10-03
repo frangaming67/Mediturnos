@@ -38,7 +38,8 @@ $semana    = $modelo->citasSemanaMedico($matricula);
 $busqueda  = trim($_GET['q'] ?? '');
 $pacientes = $modelo->pacientesDelMedico($matricula, $busqueda);
 
-$URL_TURNO = BASE_URL . 'sistema/controladores/ControladorTurno.php';
+$URL_TURNO     = BASE_URL . 'sistema/controladores/ControladorTurno.php';
+$URL_HISTORIAL = BASE_URL . 'sistema/controladores/ControladorHistorial.php';
 
 // Días en español para el encabezado (date('l') devuelve inglés)
 $diasES  = ['Monday'=>'Lunes','Tuesday'=>'Martes','Wednesday'=>'Miércoles',
@@ -159,6 +160,13 @@ $totalSemana = array_sum(array_column($semana, 'cantidad'));
                                 <input type="hidden" name="observacion" value="Consulta atendida por el profesional">
                                 <button type="submit" class="btn btn-primario btn-sm">Atender</button>
                             </form>
+                        <?php elseif ($t['estado'] === 'Realizado'): ?>
+                            <?php // Atendido: lo que sigue es dejar registro de la
+                                  // consulta. Es la acción principal del médico
+                                  // después de ver al paciente, así que va como
+                                  // botón primario y no escondida en un modal. ?>
+                            <a href="<?= $URL_HISTORIAL ?>?accion=consulta&id=<?= (int) $t['id_turno'] ?>"
+                               class="btn btn-primario btn-sm">Ficha clínica</a>
                         <?php else: ?>
                             <button type="button" class="btn btn-secundario btn-sm"
                                     onclick="verHistorialMedico(<?= (int) $t['id_turno'] ?>)">
