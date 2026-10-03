@@ -70,7 +70,7 @@ $claseBadge = fn(string $estado) => 'badge-' . mb_strtolower($estado);
       //
       // is_string: un `?msg[]=x` haría que la búsqueda en el arreglo
       // reciba un arreglo como clave, que es un error fatal. ?>
-<?php if (is_string($_GET['msg'] ?? null) && $_GET['msg'] !== ''): ?>
+<?php if (param('msg') !== ''): ?>
 <div class="alerta alerta-exito" role="alert">
     <?php
     $avisos = [
@@ -79,7 +79,7 @@ $claseBadge = fn(string $estado) => 'badge-' . mb_strtolower($estado);
         'reservado'    => 'Turno reservado.',
         'pagado'       => 'El pago se registró correctamente.',
     ];
-    echo htmlspecialchars($avisos[$_GET['msg']] ?? 'Listo.');
+    echo htmlspecialchars($avisos[param('msg')] ?? 'Listo.');
     ?>
 </div>
 <?php endif; ?>

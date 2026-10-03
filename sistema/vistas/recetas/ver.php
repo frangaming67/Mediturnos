@@ -36,7 +36,7 @@ $fechaLg = (int) date('j', $ts) . ' de ' . $MESES[(int) date('n', $ts)] . ' de '
 <div class="alerta alerta-error no-imprimir" role="alert"><?= htmlspecialchars($mensaje) ?></div>
 <?php endif; ?>
 
-<?php if (!empty($_GET['msg'])): ?>
+<?php if (param('msg') !== ''): ?>
 <div class="alerta alerta-exito no-imprimir" role="alert">
     <?php
     $textos = [
@@ -44,7 +44,7 @@ $fechaLg = (int) date('j', $ts) . ' de ' . $MESES[(int) date('n', $ts)] . ' de '
         'anulada' => 'La receta quedó anulada y le avisamos al paciente.',
         'pedida'  => 'Tu pedido de renovación quedó registrado. Le avisamos al profesional.',
     ];
-    echo htmlspecialchars($textos[$_GET['msg']] ?? 'Listo.');
+    echo htmlspecialchars($textos[param('msg')] ?? 'Listo.');
     ?>
 </div>
 <?php endif; ?>

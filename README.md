@@ -260,18 +260,21 @@ mediturnos/
 │   ├── mailer.php          Envío de correo (SMTP / archivo)
 │   ├── notificaciones.php  Qué aviso se manda y por qué canal
 │   ├── guardias.php        Controles de acceso compartidos
+│   ├── tareas.php          Recordatorios y avisos por vencimiento
+│   ├── busqueda.php        Patrones de LIKE sin comodines sueltos
 │   ├── subida_imagen.php   Subida segura de imágenes
 │   └── subida_estudio.php  Resultados médicos, fuera de la carpeta pública
 │
 ├── sistema/
 │   ├── modelos/            14 clases de acceso a datos
-│   ├── controladores/      13 controladores
+│   ├── controladores/      14 controladores
 │   └── vistas/             Plantillas, layouts y componentes
 │
 ├── dashboard/              Paneles por rol + componentes
 ├── publico/css/            Hojas de estilo
 ├── assets/js/              Calendario y modales
 ├── sql/                    Esquema y migraciones
+├── tareas/                 Tareas para un evento programado
 ├── pruebas/                Guiones de verificación
 ├── publicacion/            Base de demostración y su verificación
 ├── almacenamiento/         Archivos privados (resultados de estudios)

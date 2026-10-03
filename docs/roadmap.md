@@ -20,11 +20,6 @@ consultorios y recaudación por médico.
 
 ## Más adelante
 
-### Centro de notificaciones
-La pantalla que falta: leídas y sin leer, filtros, borrado, y los recordatorios
-de turno por correo. La infraestructura de envío y las dieciocho clases de aviso
-ya están listas — lo que no existe todavía es dónde verlas juntas.
-
 ### Panel de admisión para recepción
 Confirmar la llegada del paciente, estado de la sala de espera y cobro rápido.
 Necesita un estado nuevo en `estado_turno` y registrar la hora de llegada.
@@ -38,7 +33,7 @@ Ordenada por impacto:
 | Prioridad | Tema | Detalle |
 |---|---|---|
 | Alta | Unificar la autorización | Conviven `verificarRol()` y `verificarPermiso()` |
-| Alta | Tareas por petición | `expirarVencidos()` corre en cada visita; debería ser un evento programado |
+| Alta | Tareas por petición | `expirarVencidos()` y `marcarRealizadosAutomaticamente()` corren en cada visita. Los recordatorios y los avisos de vencimiento ya tienen un camino con cron (`tareas/ejecutar.php`), con el de las visitas como reserva y un freno de diez minutos; faltan migrar los otros dos |
 | Media | Accesibilidad pendiente | Etiquetas en los formularios viejos, modales sin `role="dialog"`, calendario no operable por teclado |
 | Media | CSRF en el registro | Es alta pública: convendría token más CAPTCHA |
 | Media | Buscador de pacientes | `turnos/nuevo` carga los 1010 pacientes en un `datalist` (155 KB) |

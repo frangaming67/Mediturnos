@@ -99,7 +99,7 @@ switch ($accion) {
     // ── Emitir la receta ────────────────────────────────────
     case 'emitir':
         verificarRol(['medico']);
-        csrf_verificar();
+        csrf_post();
 
         $turno  = turnoDelMedico($modeloTurno, (int) ($_POST['id_turno'] ?? 0));
         $volver = $URL . '?accion=nueva&turno=' . (int) $turno['id_turno'];
@@ -182,7 +182,7 @@ switch ($accion) {
     // ── Anular una receta ───────────────────────────────────
     case 'anular':
         verificarRol(['medico']);
-        csrf_verificar();
+        csrf_post();
 
         $idReceta = (int) ($_POST['id_receta'] ?? 0);
         $r        = $modelo->conDueno($idReceta);
@@ -267,7 +267,7 @@ switch ($accion) {
     // ── El paciente pide la renovación ──────────────────────
     case 'solicitar':
         verificarRol(['paciente']);
-        csrf_verificar();
+        csrf_post();
 
         $idReceta = (int) ($_POST['id_receta'] ?? 0);
         $r        = $modelo->conDueno($idReceta);
@@ -349,7 +349,7 @@ switch ($accion) {
     // ── El médico aprueba o rechaza ─────────────────────────
     case 'resolver':
         verificarRol(['medico']);
-        csrf_verificar();
+        csrf_post();
 
         $idRenov  = (int) ($_POST['id_renovacion'] ?? 0);
         $aprobar  = ($_POST['decision'] ?? '') === 'aprobar';

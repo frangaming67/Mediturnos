@@ -20,6 +20,8 @@
 // botón que no está pero la URL sí funciona.
 // -----------------------------------------------------------------
 
+require_once __DIR__ . '/../../includes/busqueda.php';
+
 class Receta
 {
     /**
@@ -217,7 +219,7 @@ class Receta
         if (!empty($filtros['q'])) {
             // Tres marcadores distintos con el mismo valor: con
             // EMULATE_PREPARES en false no se puede repetir uno.
-            $like = '%' . $this->comodinesEscapados((string) $filtros['q']) . '%';
+            $like = patronLike((string) $filtros['q']);
             $where[] = '(medicamentos LIKE :q1 OR medico LIKE :q2 OR diagnostico LIKE :q3)';
             $params[':q1'] = $like;
             $params[':q2'] = $like;
@@ -695,23 +697,6 @@ class Receta
     // =============================================================
     // AYUDANTES
     // =============================================================
-
-    /**
-     * Escapa los comodines de LIKE.
-     *
-     * Sin esto, buscar "100%" encuentra todo lo que empiece con 100 y
-     * buscar "_" encuentra absolutamente todo: el `_` de SQL es
-     * "cualquier carácter". No es un agujero de seguridad —el valor
-     * sigue viajando como parámetro— pero es un buscador que miente, y
-     * la persona no tiene forma de entender por qué.
-     *
-     * La barra invertida también se escapa, y PRIMERO: al revés,
-     * escaparía las barras que acaba de agregar.
-     */
-    private function comodinesEscapados(string $v): string
-    {
-        return str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $v);
-    }
 
     /** Texto recortado y sin espacios de más. Nunca null. */
     private function texto(mixed $v, int $max): string

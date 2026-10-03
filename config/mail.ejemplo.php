@@ -50,6 +50,21 @@ return [
     // Remitente que verá quien reciba el correo.
     // En Gmail 'desde' debe ser la MISMA dirección que 'usuario':
     // si ponés otra, Google la reescribe o rechaza el envío.
+    // ── Red de seguridad para desarrollo ─────────────────────
+    // Con EN_PRODUCCION en false (ver config/entorno.php), el sistema
+    // entrega SÓLO a estas direcciones. Por omisión, a la casilla de
+    // 'desde': en desarrollo se escribe a sí mismo y a nadie más.
+    //
+    // POR QUÉ: la base de pruebas tiene mil pacientes con direcciones
+    // inventadas en dominios que SÍ existen (aboutads.info,
+    // people.com.cn, redcross.org). El guardia de dominios reservados
+    // no las ve, y los recordatorios por tiempo le escriben a todos
+    // los pacientes de la ventana: una tanda de rebotes.
+    //
+    // Agregá acá tu casilla personal si querés recibir las pruebas.
+    // En producción esta lista se ignora.
+    // 'solo_a' => ['yo@gmail.com'],
+
     'desde'        => 'TU_CUENTA@gmail.com',
     'desde_nombre' => 'MediTurnos',
 

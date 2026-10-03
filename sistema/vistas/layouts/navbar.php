@@ -39,6 +39,39 @@ $inicialesSesion = strtoupper(substr($usuarioSesion['nombre'],0,1) . substr($usu
 // muestran las iniciales, que es el comportamiento de siempre.
 require_once __DIR__ . '/../../../includes/subida_imagen.php';
 $fotoSesion = SubidaImagen::url($_SESSION['foto'] ?? null);
+
+// Se calcula ACÁ ARRIBA y no junto al campanita porque lo usan dos
+// partes del layout: el campanita de la barra superior y el enlace del
+// menú del paciente. El menú se dibuja primero, así que calcularlo
+// abajo dejaba el contador del menú siempre en cero.
+// ── Campanita ────────────────────────────────────────────
+// Es un ENLACE al centro de notificaciones, no un desplegable.
+// Un desplegable necesita JavaScript para abrirse, y entonces sin
+// JavaScript el campanita no haría nada: el peor resultado
+// posible, porque parece que la aplicación está rota. Así
+// funciona siempre, y el panel completo está a un clic.
+//
+// Esta consulta corre en CADA página del sistema. Es la única que
+// se permite en el layout, y se justifica: el contador tiene que
+// estar al día en todas las pantallas —es su razón de existir— y
+// es un COUNT sobre el índice `idx_notif_sin_leer`, que está
+// hecho exactamente para esto. El contador de renovaciones del
+// médico, en cambio, vive en su panel justamente porque sólo
+// importa ahí.
+//
+// El try/catch: el campanita es decoración. Si la consulta falla,
+// la página tiene que dibujarse igual — nadie debería quedarse sin
+// ver su turno porque no se pudo contar un aviso.
+$sinLeerSesion = 0;
+try {
+    if (isset($pdo) && $pdo instanceof PDO && !empty($_SESSION['id_usuario'])) {
+        require_once __DIR__ . '/../../modelos/Notificacion.php';
+        $sinLeerSesion = (new Notificacion($pdo))->sinLeer((int) $_SESSION['id_usuario']);
+    }
+} catch (Throwable $e) {
+    error_log('navbar campanita: ' . $e->getMessage());
+}
+$URL_NOTIF = BASE_URL . 'sistema/controladores/ControladorNotificacion.php?accion=index';
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -128,13 +161,15 @@ $fotoSesion = SubidaImagen::url($_SESSION['foto'] ?? null);
             <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M9 15h6M12 12v6"/></svg>
             Mis recetas
         </a>
+        <a href="<?= BASE_URL ?>sistema/controladores/ControladorNotificacion.php?accion=index" class="nav-link <?= $aqui === 'ControladorNotificacion.php' ? 'activo' : '' ?>">
+            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>
+            Notificaciones
+            <?php if ($sinLeerSesion > 0): ?><span class="nav-globo"><?= $sinLeerSesion > 9 ? '9+' : $sinLeerSesion ?></span><?php endif; ?>
+        </a>
         <a href="<?= BASE_URL ?>perfil.php" class="nav-link <?= $aqui === 'perfil.php' ? 'activo' : '' ?>">
             <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
             Mi perfil
         </a>
-        <?php // El centro de notificaciones se agrega cuando su pantalla
-              // exista de verdad. Un menú con enlaces que no llevan a
-              // ninguna parte es peor que un menú corto. ?>
     <?php else: ?>
         <div class="nav-section">General</div>
         <a href="<?= BASE_URL ?>dashboard.php" class="nav-link <?= basename($_SERVER['PHP_SELF']) === 'dashboard.php' ? 'activo' : '' ?>">
@@ -245,5 +280,20 @@ $fotoSesion = SubidaImagen::url($_SESSION['foto'] ?? null);
         <?php if (isset($breadcrumb)): ?>
         <div class="topbar-breadcrumb"><?= $breadcrumb ?></div>
         <?php endif; ?>
+
+        <a href="<?= $URL_NOTIF ?>" class="topbar-campana <?= basename($_SERVER['PHP_SELF']) === 'ControladorNotificacion.php' ? 'activo' : '' ?>"
+           aria-label="Notificaciones<?= $sinLeerSesion > 0 ? ': ' . $sinLeerSesion . ' sin leer' : '' ?>"
+           title="Notificaciones">
+            <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/>
+                <path d="M13.7 21a2 2 0 0 1-3.4 0"/>
+            </svg>
+            <?php if ($sinLeerSesion > 0): ?>
+            <?php // 9+ y no el número exacto: con tres cifras el globo
+                  // deja de ser un globo y se come la barra. ?>
+            <span class="topbar-campana-globo" aria-hidden="true"><?= $sinLeerSesion > 9 ? '9+' : $sinLeerSesion ?></span>
+            <?php endif; ?>
+        </a>
     </header>
     <main class="contenido">

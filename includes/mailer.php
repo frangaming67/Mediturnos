@@ -173,6 +173,67 @@ class MailerSmtp implements Mailer
         'test', 'invalid', 'localhost', 'local',
     ];
 
+    /**
+     * 🚨 En desarrollo, el sistema sólo se escribe A SÍ MISMO.
+     *
+     * ── POR QUÉ HACE FALTA ADEMÁS DEL GUARDIA DE DOMINIOS ────
+     * El guardia de arriba cubre `@example.com` y los demás dominios
+     * reservados. Pero los 1012 pacientes de la base de desarrollo no
+     * usan esos: usan direcciones inventadas en dominios REALES
+     * —aboutads.info, people.com.cn, redcross.org—. Existen, aceptan
+     * correo, y la casilla no está. Rebotan.
+     *
+     * Mientras cada aviso lo disparaba una acción sobre un paciente
+     * concreto, el daño era de a uno. Con los recordatorios por tiempo la
+     * tarea recorre TODOS los turnos de la ventana y le escribe a cada
+     * paciente: una tanda de rebotes a la casilla del dueño del sistema,
+     * y el riesgo de que el proveedor marque la cuenta por envíos a
+     * direcciones inexistentes.
+     *
+     * Ya pasó dos veces en este proyecto con envíos de a uno. Con una
+     * tarea que recorre filas, pasaría en serie.
+     *
+     * ── POR QUÉ NO SE APAGA EL CORREO Y LISTO ────────────────
+     * Porque hay que poder probar que el correo sale de verdad, que llega
+     * y que se ve bien en un cliente real. Lo que no hay que poder es
+     * escribirle a un tercero. Así que en desarrollo se entrega sólo a la
+     * lista blanca, que por omisión tiene una sola dirección: la casilla
+     * desde la que el sistema manda.
+     *
+     * Para agregar otra —la casilla personal de quien prueba— va en
+     * `config/mail.php`:
+     *
+     *     'solo_a' => ['yo@gmail.com', 'otro@gmail.com'],
+     *
+     * En producción (EN_PRODUCCION en true) esto no se aplica: ahí las
+     * direcciones son de gente real.
+     */
+    private function permitidoEnDesarrollo(string $para): bool
+    {
+        // defined(): mailer.php se usa también desde guiones que no
+        // cargan conexion.php, y en ese caso no hay ninguna constante que
+        // consultar. Sin configuración explícita se asume desarrollo, que
+        // es la opción prudente: si alguien olvida definirla, el sistema
+        // manda MENOS correo y no más.
+        $enProduccion = defined('EN_PRODUCCION') && EN_PRODUCCION;
+        if ($enProduccion) {
+            return true;
+        }
+
+        $permitidas = $this->cfg['solo_a'] ?? [$this->cfg['desde'] ?? ''];
+        if (!is_array($permitidas)) {
+            $permitidas = [$permitidas];
+        }
+
+        $para = strtolower(trim($para));
+        foreach ($permitidas as $p) {
+            if (is_string($p) && $p !== '' && strtolower(trim($p)) === $para) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     /** ¿Esta dirección puede recibir correo, aunque sea en teoría? */
     private function entregable(string $para): bool
     {
@@ -201,6 +262,16 @@ class MailerSmtp implements Mailer
         if (!$this->entregable($para)) {
             $this->error = 'La dirección ' . $para . ' pertenece a un dominio reservado '
                          . 'que no puede recibir correo. No se intentó el envío.';
+            error_log('MailerSmtp: ' . $this->error);
+            return false;
+        }
+
+        // En desarrollo, sólo a la lista blanca. Ver el comentario de
+        // permitidoEnDesarrollo(): la base de pruebas tiene mil
+        // direcciones inventadas en dominios que SÍ existen.
+        if (!$this->permitidoEnDesarrollo($para)) {
+            $this->error = 'Modo desarrollo: no se escribe a ' . $para
+                         . '. Sólo a la casilla del sistema (o a las de "solo_a").';
             error_log('MailerSmtp: ' . $this->error);
             return false;
         }

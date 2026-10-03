@@ -28,6 +28,10 @@ SITIO="http://localhost/mediturnos"
 MYSQL_ROOT="/c/xampp/mysql/bin/mysql.exe -u root"
 BASE="mediturnos_demo_prueba"
 MY="$MYSQL_ROOT -N -B $BASE"
+
+# El cliente de MySQL en Windows devuelve los valores con CR al final, y
+# $( ) no lo saca: "3" y "3" se comparan como distintos.
+my_demo() { printf %s "$($MY -e "$1")" | tr -d ''; }
 ENTORNO="$RAIZ/config/entorno.php"
 RESPALDO="$RAIZ/config/entorno.php.respaldo-verificacion"
 TMP="$(mktemp -d)"
@@ -116,7 +120,13 @@ chk "un solo paciente (el de la demo), no 1012" "1" "$($MY -e "SELECT COUNT(*) F
 chk "tres cuentas, no 1026"                     "3" "$($MY -e "SELECT COUNT(*) FROM usuario;" | tr -d '\r')"
 chk "sin intentos de login de nadie"            "0" "$($MY -e "SELECT COUNT(*) FROM intento_login;" | tr -d '\r')"
 chk "sin tokens de recuperación"                "0" "$($MY -e "SELECT COUNT(*) FROM password_reset;" | tr -d '\r')"
-chk "sin notificaciones viejas"                 "0" "$($MY -e "SELECT COUNT(*) FROM notificacion;" | tr -d '\r')"
+# No "cero notificaciones": la demo trae tres a propósito, para que el
+# centro de avisos no aparezca vacío. Lo que se comprueba es que no haya
+# NINGUNA de otra cuenta, o sea arrastrada del entorno de desarrollo.
+chk "tres avisos, todos de la cuenta de demostración" "3" \
+    "$(my_demo "SELECT COUNT(*) FROM notificacion n JOIN usuario u ON u.id_usuario=n.id_usuario WHERE u.usuario='demo.paciente';")"
+chk "ninguna de otra cuenta" "0" \
+    "$(my_demo "SELECT COUNT(*) FROM notificacion n JOIN usuario u ON u.id_usuario=n.id_usuario WHERE u.usuario<>'demo.paciente';")"
 chk "sin calificaciones"                        "0" "$($MY -e "SELECT COUNT(*) FROM calificacion;" | tr -d '\r')"
 chk "ninguna cuenta con la clave del seed"      "0" \
     "$($MY -e "SELECT COUNT(*) FROM usuario WHERE usuario IN ('admin','cfernandez','mgonzalez','laila');" | tr -d '\r')"
@@ -151,6 +161,7 @@ abrir pac dashboard.php 200 "demo.paciente entra a su panel"
 tiene "y lo saluda por su nombre"            "$TMP/body" "Demo"
 tiene "con su próximo turno"                 "$TMP/body" "Confirmado"
 tiene "y el aviso de pago pendiente"         "$TMP/body" "Falta abonar"
+tiene "el campanita con avisos pendientes"  "$TMP/body" "topbar-campana-globo"
 tiene "con el botón para pagarlo"            "$TMP/body" "Pagar ahora"
 abrir pac recetas.php 200 "sus recetas"
 tiene "con el medicamento de la demo"        "$TMP/body" "Enalapril"
@@ -165,6 +176,9 @@ abrir pac "sistema/controladores/ControladorPago.php?accion=index" 200 "sus pago
 tiene "con el importe con descuento aplicado" "$TMP/body" "1.000"
 abrir pac agendar.php 200 "el asistente de reserva"
 tiene "ofrece especialidades reales"         "$TMP/body" "Cardiologia"
+abrir pac "sistema/controladores/ControladorNotificacion.php?accion=index" 200 "su centro de notificaciones"
+tiene "con el aviso de la receta"          "$TMP/body" "Tenés una receta nueva"
+tiene "y uno sin leer"                     "$TMP/body" "Sin leer"
 abrir pac perfil.php 200 "su perfil"
 tiene "con su cobertura cargada"             "$TMP/body" "OSDE"
 

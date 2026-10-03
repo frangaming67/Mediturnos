@@ -50,7 +50,7 @@ mostradas.
 
 ## Controladores
 
-Trece archivos en `sistema/controladores/`, todos con la misma forma:
+Catorce archivos en `sistema/controladores/`, todos con la misma forma:
 
 ```php
 require conexion + auth + modelo;
@@ -172,6 +172,8 @@ try {
 | `includes/subida_imagen.php` | Subida y procesamiento seguro de imágenes |
 | `includes/subida_estudio.php` | Resultados médicos: fuera de la carpeta pública — ver [historial-clinico.md](historial-clinico.md) |
 | `includes/guardias.php` | Controles de acceso que necesita más de un controlador |
+| `includes/tareas.php` | Avisos que dispara el reloj, no una acción — ver [notificaciones.md](notificaciones.md) |
+| `includes/busqueda.php` | `patronLike()`: texto de un buscador a patrón de `LIKE`, con los comodines escapados |
 
 `auth.php` y `seguridad.php` están separados a propósito: el primero responde
 preguntas de negocio (quién sos, qué podés hacer) y el segundo aplica medidas de

@@ -174,7 +174,7 @@ switch ($accion) {
     // ── Reservar turno ───────────────────────────────────────
     case 'reservar':
         verificarRol(['admin', 'recepcionista', 'paciente']);
-        csrf_verificar();
+        csrf_post();
 
         $id_paciente = ($_SESSION['rol'] === 'paciente')
             ? (int)($_SESSION['id_paciente'] ?? 0)
@@ -335,7 +335,7 @@ switch ($accion) {
     // ── Cancelar turno (llama al SP) ─────────────────────────
     case 'cancelar':
         verificarRol(['admin', 'recepcionista', 'paciente']);
-        csrf_verificar();
+        csrf_post();
         $id  = (int)($_POST['id_turno']    ?? 0);
         $obs = trim($_POST['observacion']  ?? 'Cancelado por el usuario');
 
@@ -403,7 +403,7 @@ switch ($accion) {
     // ── Cambiar estado (Confirmado / Realizado / Ausente) ────
     case 'cambiarEstado':
         verificarRol(['admin', 'recepcionista', 'medico']);
-        csrf_verificar();
+        csrf_post();
         $id     = (int)($_POST['id_turno'] ?? 0);
         $estado = trim($_POST['estado']   ?? '');
         $obs    = trim($_POST['observacion'] ?? '');
@@ -466,7 +466,7 @@ switch ($accion) {
     // ── Calificar una consulta ya realizada ──────────────────
     case 'calificar':
         verificarRol(['paciente']);
-        csrf_verificar();
+        csrf_post();
 
         $turno = turnoPropio($modelo, (int) ($_POST['id_turno'] ?? 0));
         $URLC  = BASE_URL . 'sistema/controladores/ControladorTurno.php?accion=detalle&id='
@@ -533,7 +533,7 @@ switch ($accion) {
     // ── Reprogramar: guardar ─────────────────────────────────
     case 'guardarReprogramacion':
         verificarRol(['admin', 'recepcionista', 'paciente']);
-        csrf_verificar();
+        csrf_post();
 
         $turno = turnoPropio($modelo, (int) ($_POST['id_turno'] ?? 0));
         $URLD  = BASE_URL . 'sistema/controladores/ControladorTurno.php';

@@ -143,7 +143,7 @@ switch ($accion) {
 
     // ── Procesar pago con tarjeta (pasarela simulada) ────────
     case 'procesar':
-        csrf_verificar();
+        csrf_post();
         $pago = obtenerPagoSeguro($modelo, $URL);
 
         $resultado = $modelo->pagarConTarjeta((int) $pago['id_pago'], [
@@ -208,7 +208,7 @@ switch ($accion) {
     // pagando se le retenía el horario 15 minutos; al elegir pagar
     // después, se le reserva 48 horas.
     case 'diferir':
-        csrf_verificar();
+        csrf_post();
         $pago = obtenerPagoSeguro($modelo, $URL);
         $modelo->extenderPlazo((int) $pago['id_pago']);
         header('Location: ' . $URL . '?accion=elegir&id_pago=' . (int) $pago['id_pago'] . '&msg=diferido');
@@ -232,7 +232,7 @@ switch ($accion) {
     // ── Cobro en recepción (solo staff) ──────────────────────
     case 'recepcion':
         verificarRol(['admin', 'recepcionista']);
-        csrf_verificar();
+        csrf_post();
         $pago = obtenerPagoSeguro($modelo, $URL);
 
         // 'volver' sólo se acepta si es una URL interna del sistema (evita open-redirect).

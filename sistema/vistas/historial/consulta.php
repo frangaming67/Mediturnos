@@ -28,7 +28,7 @@ $yaRealizado = $turno['estado'] === 'Realizado';
 <div class="alerta alerta-error" role="alert"><?= htmlspecialchars($mensaje) ?></div>
 <?php endif; ?>
 
-<?php if (!empty($_GET['msg'])): ?>
+<?php if (param('msg') !== ''): ?>
 <div class="alerta alerta-exito" role="alert">
     <?php
     $avisos = [
@@ -36,7 +36,7 @@ $yaRealizado = $turno['estado'] === 'Realizado';
         'estudio_pedido' => 'El estudio quedó registrado y el paciente fue notificado.',
         'resultado_ok'   => 'El resultado se cargó. El paciente ya puede verlo.',
     ];
-    echo htmlspecialchars($avisos[$_GET['msg']] ?? 'Listo.');
+    echo htmlspecialchars($avisos[param('msg')] ?? 'Listo.');
     ?>
 </div>
 <?php endif; ?>

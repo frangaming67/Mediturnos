@@ -90,7 +90,7 @@ CREATE TABLE `consulta` (
   KEY `fk_consulta_medico` (`matricula`),
   CONSTRAINT `fk_consulta_medico` FOREIGN KEY (`matricula`) REFERENCES `medico` (`matricula`),
   CONSTRAINT `fk_consulta_turno` FOREIGN KEY (`id_turno`) REFERENCES `turno` (`id_turno`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=14 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
@@ -155,7 +155,7 @@ CREATE TABLE `estudio` (
   CONSTRAINT `fk_estudio_medico` FOREIGN KEY (`matricula`) REFERENCES `medico` (`matricula`),
   CONSTRAINT `fk_estudio_paciente` FOREIGN KEY (`id_paciente`) REFERENCES `paciente` (`id_paciente`) ON DELETE CASCADE,
   CONSTRAINT `fk_estudio_turno` FOREIGN KEY (`id_turno`) REFERENCES `turno` (`id_turno`) ON DELETE SET NULL
-) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=628 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
@@ -169,7 +169,7 @@ CREATE TABLE `historial_turno` (
   PRIMARY KEY (`id_hist`),
   KEY `id_turno` (`id_turno`),
   CONSTRAINT `historial_turno_ibfk_1` FOREIGN KEY (`id_turno`) REFERENCES `turno` (`id_turno`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=207 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=222 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
@@ -244,7 +244,7 @@ CREATE TABLE `notificacion` (
   KEY `idx_notif_usuario` (`id_usuario`,`creada_en`),
   KEY `idx_notif_sin_leer` (`id_usuario`,`leida_en`),
   CONSTRAINT `fk_notificacion_usuario` FOREIGN KEY (`id_usuario`) REFERENCES `usuario` (`id_usuario`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=189 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=244 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
@@ -307,7 +307,7 @@ CREATE TABLE `pago` (
   KEY `idx_pago_estado` (`estado`),
   KEY `idx_pago_venc` (`fecha_vencimiento`),
   CONSTRAINT `pago_ibfk_1` FOREIGN KEY (`id_turno`) REFERENCES `turno` (`id_turno`)
-) ENGINE=InnoDB AUTO_INCREMENT=69 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=74 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
@@ -371,7 +371,7 @@ CREATE TABLE `receta` (
   CONSTRAINT `fk_receta_paciente` FOREIGN KEY (`id_paciente`) REFERENCES `paciente` (`id_paciente`) ON DELETE CASCADE,
   CONSTRAINT `fk_receta_turno` FOREIGN KEY (`id_turno`) REFERENCES `turno` (`id_turno`) ON DELETE SET NULL,
   CONSTRAINT `chk_receta_vigencia` CHECK (`vence_el` >= `emitida_el`)
-) ENGINE=InnoDB AUTO_INCREMENT=75 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=99 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
@@ -388,7 +388,7 @@ CREATE TABLE `receta_medicamento` (
   KEY `idx_item_receta` (`id_receta`),
   CONSTRAINT `fk_item_receta` FOREIGN KEY (`id_receta`) REFERENCES `receta` (`id_receta`) ON DELETE CASCADE,
   CONSTRAINT `chk_item_cantidad` CHECK (`cantidad` > 0)
-) ENGINE=InnoDB AUTO_INCREMENT=133 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=178 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
@@ -415,7 +415,7 @@ CREATE TABLE `renovacion_receta` (
   CONSTRAINT `fk_renov_nueva` FOREIGN KEY (`id_receta_nueva`) REFERENCES `receta` (`id_receta`) ON DELETE SET NULL,
   CONSTRAINT `fk_renov_paciente` FOREIGN KEY (`id_paciente`) REFERENCES `paciente` (`id_paciente`) ON DELETE CASCADE,
   CONSTRAINT `fk_renov_receta` FOREIGN KEY (`id_receta`) REFERENCES `receta` (`id_receta`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=49 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=68 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
@@ -471,7 +471,7 @@ CREATE TABLE `turno` (
   CONSTRAINT `turno_ibfk_3` FOREIGN KEY (`id_especialidad`) REFERENCES `especialidad` (`id_especialidad`) ON UPDATE CASCADE,
   CONSTRAINT `turno_ibfk_4` FOREIGN KEY (`id_consultorio`) REFERENCES `consultorio` (`id_consultorio`) ON UPDATE CASCADE,
   CONSTRAINT `turno_ibfk_5` FOREIGN KEY (`id_plan`) REFERENCES `plan_os` (`id_plan`) ON UPDATE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=118 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=133 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 /*!50003 SET @saved_cs_client      = @@character_set_client */ ;
 /*!50003 SET @saved_cs_results     = @@character_set_results */ ;
@@ -972,12 +972,12 @@ UNLOCK TABLES;
 -- agenda no aparece vacía.
 INSERT INTO usuario (nombre, apellido, usuario, email, contrasenia, id_rol, matricula, estado)
 SELECT m.nombre, m.apellido, 'demo.medico', 'demo.medico@ejemplo-mediturnos.ar',
-       '$2y$10$pPZTXatIrLt8U/GoE4SGquVOpH7w7n3S1wVvbr5aXRdNyo9RW0I/.', 4, m.matricula, 'activo'
+       '$2y$10$qjF9SqAxwVUcWV6YJAIVuevcbMO7DagLa43hxKXxvneissyPOCmeu', 4, m.matricula, 'activo'
 FROM   medico m WHERE m.matricula = 10001;
 
 INSERT INTO usuario (nombre, apellido, usuario, email, contrasenia, id_rol, estado)
 VALUES ('Demo', 'Administración', 'demo.admin',
-        'demo.admin@ejemplo-mediturnos.ar', '$2y$10$pPZTXatIrLt8U/GoE4SGquVOpH7w7n3S1wVvbr5aXRdNyo9RW0I/.', 1, 'activo');
+        'demo.admin@ejemplo-mediturnos.ar', '$2y$10$qjF9SqAxwVUcWV6YJAIVuevcbMO7DagLa43hxKXxvneissyPOCmeu', 1, 'activo');
 
 -- El paciente necesita ficha en `paciente` ADEMÁS de cuenta en
 -- `usuario`: son dos cosas distintas en este modelo (recepción carga
@@ -990,7 +990,7 @@ SET @pac = LAST_INSERT_ID();
 
 INSERT INTO usuario (nombre, apellido, usuario, email, contrasenia, id_rol, id_paciente, estado)
 VALUES ('Demo', 'Paciente', 'demo.paciente',
-        'demo.paciente@ejemplo-mediturnos.ar', '$2y$10$pPZTXatIrLt8U/GoE4SGquVOpH7w7n3S1wVvbr5aXRdNyo9RW0I/.', 3, @pac, 'activo');
+        'demo.paciente@ejemplo-mediturnos.ar', '$2y$10$qjF9SqAxwVUcWV6YJAIVuevcbMO7DagLa43hxKXxvneissyPOCmeu', 3, @pac, 'activo');
 
 -- Cobertura: un plan de obra social de verdad, con su número de
 -- afiliado. Los planes "Particular" los puede usar cualquiera sin estar
@@ -999,7 +999,7 @@ VALUES ('Demo', 'Paciente', 'demo.paciente',
 -- descuento aplicado en el resumen de la reserva, que es la mitad de la
 -- lógica de precios del sistema.
 INSERT INTO paciente_plan (id_paciente, id_plan, nro_afiliado, fecha_alta)
-VALUES (@pac, 1, '405323653', CURDATE());
+VALUES (@pac, 1, '157072825', CURDATE());
 
 
 -- ══════════════════════════════════════════════════════════
@@ -1014,6 +1014,8 @@ VALUES (@pac, 1, '405323653', CURDATE());
 --         (SELECT id_paciente FROM usuario WHERE usuario = 'demo.paciente');
 --     DELETE FROM receta WHERE id_paciente =
 --         (SELECT id_paciente FROM usuario WHERE usuario = 'demo.paciente');
+--     DELETE FROM notificacion WHERE id_usuario =
+--         (SELECT id_usuario FROM usuario WHERE usuario = 'demo.paciente');
 
 -- ── Turno ya atendido, hace tres semanas ─────────────────────
 -- La hora es 10:00 y la fecha se calcula desde hoy, así que el archivo
@@ -1058,6 +1060,40 @@ SET @r1 = LAST_INSERT_ID();
 INSERT INTO receta_medicamento (id_receta, nombre, presentacion, dosis, frecuencia, duracion, cantidad)
 VALUES (@r1, 'Enalapril', 'comprimidos 10 mg', '1 comprimido', 'cada 12 horas', 'por 30 días', 2),
        (@r1, 'Aspirina',  'comprimidos 100 mg', '1 comprimido', 'por la mañana',  'por 30 días', 1);
+
+-- ── Notificaciones ───────────────────────────────────────────
+-- Para que el centro de avisos no aparezca vacío. Son los mismos
+-- avisos que el sistema habría emitido al pasar lo de arriba.
+--
+-- Uno queda SIN LEER a propósito: así se ve el campanita con su globo,
+-- que es la mitad de lo que hay que mostrar.
+INSERT INTO notificacion (id_usuario, tipo, titulo, mensaje, url_accion,
+                          id_referencia, creada_en, leida_en, email_enviado_en)
+SELECT u.id_usuario, 'receta_nueva', 'Tenés una receta nueva',
+       CONCAT('Dr/a. ', m.apellido, ', ', m.nombre,
+              ' te emitió una receta con 2 medicamentos.'),
+       'recetas.php', @r1,
+       DATE_SUB(NOW(), INTERVAL 21 DAY), NULL, DATE_SUB(NOW(), INTERVAL 21 DAY)
+FROM   usuario u, medico m
+WHERE  u.usuario = 'demo.paciente' AND m.matricula = 10001;
+
+INSERT INTO notificacion (id_usuario, tipo, titulo, mensaje, url_accion,
+                          creada_en, leida_en, email_enviado_en)
+SELECT u.id_usuario, 'estudio_pedido', 'Te pidieron un estudio',
+       'Hemograma completo. Cuando el resultado esté cargado te avisamos.',
+       'historial.php',
+       DATE_SUB(NOW(), INTERVAL 21 DAY),
+       DATE_SUB(NOW(), INTERVAL 20 DAY), DATE_SUB(NOW(), INTERVAL 21 DAY)
+FROM   usuario u WHERE u.usuario = 'demo.paciente';
+
+INSERT INTO notificacion (id_usuario, tipo, titulo, mensaje, url_accion,
+                          creada_en, leida_en)
+SELECT u.id_usuario, 'resultados_listos', 'Ficha de tu consulta disponible',
+       'Tu profesional registró el detalle de la atención.',
+       'historial.php',
+       DATE_SUB(NOW(), INTERVAL 20 DAY), DATE_SUB(NOW(), INTERVAL 20 DAY)
+FROM   usuario u WHERE u.usuario = 'demo.paciente';
+
 
 -- ── Turno próximo, confirmado ────────────────────────────────
 -- A diez días: deja ver la cuenta regresiva, el detalle y la

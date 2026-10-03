@@ -217,3 +217,130 @@ directamente **no expone** una forma de borrar la notificación de otro.
 
 **Verificado:** un usuario ajeno no puede marcarla como leída ni eliminarla, y
 la fila sigue existiendo después del intento.
+
+---
+
+## El centro de notificaciones
+
+La tabla y el servicio de emisión existen desde la primera etapa, y todos los
+módulos vienen escribiendo ahí. Lo que faltaba era **dónde verlas**.
+
+`ControladorNotificacion.php` y su vista: pestañas por estado (todas / sin leer /
+leídas), filtro por tipo, paginado, marcar una o todas como leídas, borrar una y
+vaciar las leídas.
+
+### Es un controlador y no un archivo en la raíz
+
+`historial.php` y `recetas.php` están en la raíz porque son pantallas del Área
+del Paciente. Las notificaciones no: un médico recibe los pedidos de renovación,
+y el día que haya avisos para administración también los va a recibir. Es una
+pantalla de cualquier cuenta.
+
+### El filtro ofrece sólo los tipos que esa persona tiene
+
+`Notificacion::porTipo()` agrupa los avisos del usuario. Un desplegable con los
+veinte tipos del sistema le ofrecería a un paciente filtrar por "pedido de
+renovación", que es un aviso de médico y nunca va a tener.
+
+### "Vaciar leídas" no borra las que no se leyeron
+
+Un "borrar todo" se llevaría avisos que la persona no vio, y le haría perder un
+resultado disponible o un pago por vencer sin que sepa que existió. Para
+deshacerse de una sin leer está el botón de su fila.
+
+### El campanita es un enlace, no un desplegable
+
+Un desplegable necesita JavaScript para abrirse, y sin JavaScript el campanita no
+haría nada: el peor resultado posible, porque la persona cree que la aplicación
+está rota. Así funciona siempre y el panel completo está a un clic.
+
+El contador es **la única consulta que se permite en el layout**, o sea en cada
+página del sistema. Se justifica porque tiene que estar al día en todas las
+pantallas —es su razón de existir— y es un `COUNT` sobre el índice
+`idx_notif_sin_leer`, hecho exactamente para eso. Va envuelta en `try/catch`: el
+campanita es decoración, y nadie debería quedarse sin ver su turno porque no se
+pudo contar un aviso.
+
+El contador de renovaciones pendientes del médico, en cambio, vive en su panel
+justamente porque sólo importa ahí.
+
+---
+
+## 🚨 La redirección abierta que no llegó a existir
+
+Cada aviso guarda su `url_accion`, y al abrirlo el controlador redirige ahí. Ese
+valor lo escribe el propio sistema, así que hoy no puede traer nada raro.
+
+Igual se valida, porque termina en una cabecera `Location:` y eso convierte
+cualquier descuido futuro en dos agujeros concretos:
+
+- **Redirección abierta.** Un aviso con `//otrositio.com` llevaría a otro dominio
+  *desde una dirección nuestra*. Es la base de un engaño de phishing: el enlace
+  que la persona recibe y revisa es del sitio en el que confía.
+- **Inyección de cabeceras.** Un salto de línea dentro del valor permite agregar
+  cabeceras propias a la respuesta.
+
+`destinoSeguro()` rechaza cualquier esquema (`http:`, `javascript:`, `data:`), los
+`//host` y `\host`, y los saltos de línea. Ante la duda, el panel. Son cinco
+líneas que cubren al código que todavía no se escribió, y hay seis comprobaciones
+que lo verifican.
+
+---
+
+## Las tareas por tiempo
+
+Todos los demás avisos salen de algo que alguien hizo: se reservó un turno, se
+aprobó un pago. El controlador que atiende esa acción avisa y listo.
+
+Dos no tienen disparador, porque nadie hace nada el día antes de un turno —de eso
+se trata el recordatorio—:
+
+| Tarea | Cuándo | Por qué ese momento |
+|---|---|---|
+| Recordatorio de turno | entre 24 y 36 h antes | Un turno de las 9 avisado a las 23:50 del día anterior llega diez minutos antes de que la persona se vaya a dormir. Con una ventana de horas el aviso sale cuando todavía se puede reorganizar el día o cancelar |
+| Pago por vencer | 6 h antes | Antes sería ruido (el plazo normal es de 48 h) y después ya no sirve |
+
+### Dos caminos para ejecutarlas
+
+El **recomendado** es un evento programado corriendo `tareas/ejecutar.php` una vez
+por hora — ver [deployment.md](deployment.md).
+
+El de **reserva**, para un hosting sin cron, es `dashboard.php` con un freno de
+diez minutos por sesión. Las tareas son globales, así que la visita de cualquiera
+dispara los avisos de todos. Su defecto es claro: **si nadie entra al sitio, nadie
+recibe su recordatorio.**
+
+Es la misma solución de compromiso que ya tenía `expirarVencidos()`, y está
+anotada en la [deuda técnica](roadmap.md).
+
+### Lo que hace que repetirlas sea seguro
+
+Todo pasa por `notificarUnaVez()`, que mira si ya existe un aviso de ese tipo para
+esa referencia y ese usuario. **Correr las tareas mil veces produce exactamente
+los mismos avisos que correrlas una.** Sin eso, el paciente recibiría un correo
+por cada página que abriera alguien.
+
+### La tarea no se sirve por la web
+
+Un archivo que dispara correos y se puede pedir por URL es un archivo que
+cualquiera puede hacer correr mil veces. Los avisos no se duplicarían, pero el
+servidor haría el trabajo igual: una denegación de servicio regalada.
+
+Hay **dos barreras independientes** y a propósito: la comprobación de `PHP_SAPI`,
+que no depende del servidor web, y el `.htaccess` de la carpeta, que no depende de
+PHP. Cualquiera de las dos sola alcanzaría; las dos juntas siguen valiendo si una
+falla —un `.htaccess` que no se lee porque falta `AllowOverride`, por ejemplo—.
+
+---
+
+## Cómo se verifica
+
+```bash
+php  pruebas/tareas.php               # 20 comprobaciones
+bash pruebas/notificaciones_http.sh   # 62 comprobaciones
+```
+
+Las segundas incluyen los seis intentos de redirección abierta, los intentos
+cruzados entre dos cuentas (ver, marcar y borrar el aviso de otra persona), y la
+separación entre exigir POST y exigir token, que son dos defensas distintas y
+fallan distinto.

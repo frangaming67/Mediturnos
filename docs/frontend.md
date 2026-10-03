@@ -32,6 +32,7 @@ caiga a Times si Google Fonts no carga.
 | `auth.css` | Login, registro y recuperación **+ widgets de formulario reutilizables** |
 | `perfil.css` | Sólo "Mi perfil" |
 | `paciente.css` | Área del Paciente: inicio, detalle de turno, reprogramación, asistente de reserva, pago, historial y recetas |
+| `notificaciones.css` | Sólo el centro de notificaciones (el campanita está en `estilos.css`, que se carga en todas) |
 | `utilidades.css` | Helpers de una sola propiedad, para evitar estilos en línea |
 
 Están separados por **responsabilidad**, no por rendimiento: los tres primeros se

@@ -9,6 +9,19 @@ Versionado según [SemVer](https://semver.org/lang/es/).
 
 ### Agregado
 
+**Centro de notificaciones** — ver [notificaciones.md](notificaciones.md)
+- La pantalla que faltaba: la tabla y el servicio de emisión existían desde la
+  primera etapa y todos los módulos escribían ahí, pero no había dónde verlas
+- Pestañas (todas / sin leer / leídas), filtro por tipo, paginado, marcar una o
+  todas como leídas, borrar una y vaciar las leídas
+- El filtro ofrece **sólo los tipos que esa persona tiene**: a un paciente no se
+  le ofrece filtrar por "pedido de renovación", que es un aviso de médico
+- Campanita con contador en la barra superior, en todas las pantallas y para los
+  cuatro roles. Es un enlace, no un desplegable: funciona sin JavaScript
+- **Recordatorio de turno** (entre 24 y 36 horas antes) y **aviso de pago por
+  vencer** (6 horas antes), con `tareas/ejecutar.php` para un evento programado
+  y un camino de reserva por visitas para los hosting sin cron
+
 **Recetas y renovaciones** — ver [recetas.md](recetas.md)
 - Tablas `receta`, `receta_medicamento` y `renovacion_receta`
 - **Lado del médico**: emitir una receta con varios medicamentos (nombre,
@@ -95,6 +108,30 @@ Versionado según [SemVer](https://semver.org/lang/es/).
 
 ### Corregido
 
+- 🚨 **Dieciocho acciones que modifican datos se podían disparar con un GET y
+  sin token.** `csrf_verificar()` deja pasar todo lo que no sea POST, y eso es
+  correcto al principio de un controlador que sirve listados, pero es una
+  trampa dentro de una acción que modifica datos. Una acción que funciona por
+  GET no necesita ningún formulario: basta una etiqueta `<img>` apuntada a esa
+  dirección en cualquier página. Comprobado: un GET sin token a
+  `?accion=eliminarLeidas` devolvía 302 y borraba tres notificaciones. Ahora
+  existe `csrf_post()`, que exige POST **y** token
+- 🚨 **Un parámetro de la URL como arreglo tumbaba la página.** `?err[]=x` o
+  `?msg[]=x` daban un error fatal de PHP… respondiendo **200**, con el error
+  impreso arriba del contenido. `!empty()` no protegía: un arreglo con un
+  elemento no está vacío
+- 🚨 **El buscador del historial mentía.** Sin escapar los comodines de `LIKE`,
+  buscar «100%» devolvía todo lo que empiece con 100 y buscar «_» devolvía
+  absolutamente todo
+- **Una consulta se ubicaba en la fecha en que el médico escribió la ficha**, no
+  en la del turno. Una consulta de hace tres semanas registrada hoy aparecía
+  hoy, arriba de todo y descolgada de su cita
+- **La línea de tiempo del historial no tenía techo**: traía todas las filas en
+  cada visita
+- **Pedir un estudio no exigía turno realizado**, aunque la ficha clínica sí.
+  Un POST armado a mano registraba un estudio sobre un turno cancelado
+- **`almacenamiento/mails/` se listaba por HTTP**, y ahí viven los correos del
+  modo desarrollo: incluyen enlaces de recuperación de contraseña válidos
 - **Los errores se perdían para el médico y el administrador.** Varios
   controladores vuelven al panel con `?err=`, pero sólo el panel del paciente
   mostraba el mensaje. Un médico que entraba a un enlace viejo veía su agenda

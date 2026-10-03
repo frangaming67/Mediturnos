@@ -109,6 +109,69 @@ class Notificacion
         return $stmt->rowCount() > 0;
     }
 
+    /**
+     * Vacía la bandeja: borra las que YA SE LEYERON.
+     *
+     * Sólo las leídas, a propósito. Un "borrar todo" que se lleve también
+     * las que la persona no vio le hace perder un aviso que quizá
+     * importaba —un resultado disponible, un pago por vencer— sin que
+     * sepa que existió. Para deshacerse de una sin leer, está el botón de
+     * esa fila.
+     *
+     * @return int Cuántas se borraron.
+     */
+    public function eliminarLeidas(int $idUsuario): int
+    {
+        $stmt = $this->pdo->prepare(
+            "DELETE FROM notificacion WHERE id_usuario = :u AND leida_en IS NOT NULL"
+        );
+        $stmt->execute([':u' => $idUsuario]);
+        return $stmt->rowCount();
+    }
+
+    /**
+     * Una notificación, SIEMPRE acotada a su dueño.
+     *
+     * No existe un `buscarPorId($id)` suelto: la firma obliga a decir de
+     * quién tiene que ser. Es la misma decisión que en `Historial` y
+     * `Receta`, y por el mismo motivo — si el control vive en el
+     * controlador, alcanza con que un controlador nuevo se olvide.
+     */
+    public function deUsuario(int $id, int $idUsuario): array|false
+    {
+        $stmt = $this->pdo->prepare(
+            "SELECT * FROM notificacion WHERE id_notificacion = :id AND id_usuario = :u"
+        );
+        $stmt->execute([':id' => $id, ':u' => $idUsuario]);
+        return $stmt->fetch();
+    }
+
+    /**
+     * Cuántas hay de cada tipo, para armar el filtro.
+     *
+     * Se usa para ofrecer SÓLO los tipos que esta persona realmente
+     * tiene: un desplegable con los dieciocho tipos del sistema le
+     * mostraría a un paciente opciones como "pedido de renovación", que
+     * es un aviso de médico y nunca va a tener.
+     *
+     * @return array<string,int> ['turno_reservado' => 3, …]
+     */
+    public function porTipo(int $idUsuario): array
+    {
+        $stmt = $this->pdo->prepare(
+            "SELECT tipo, COUNT(*) AS cuantas
+             FROM   notificacion WHERE id_usuario = :u
+             GROUP  BY tipo ORDER BY cuantas DESC, tipo"
+        );
+        $stmt->execute([':u' => $idUsuario]);
+
+        $salida = [];
+        foreach ($stmt->fetchAll() as $f) {
+            $salida[$f['tipo']] = (int) $f['cuantas'];
+        }
+        return $salida;
+    }
+
     // =============================================================
     // LECTURA
     // =============================================================

@@ -25,14 +25,14 @@ require __DIR__ . '/../layouts/navbar.php';
 <div class="alerta alerta-error" role="alert"><?= htmlspecialchars($mensaje) ?></div>
 <?php endif; ?>
 
-<?php if (!empty($_GET['msg'])): ?>
+<?php if (param('msg') !== ''): ?>
 <div class="alerta alerta-exito" role="alert">
     <?php
     $textos = [
         'aprobada'  => 'Aprobaste el pedido: se emitió una receta nueva y el paciente ya fue notificado.',
         'rechazada' => 'Rechazaste el pedido. El paciente recibió tu respuesta.',
     ];
-    echo htmlspecialchars($textos[$_GET['msg']] ?? 'Listo.');
+    echo htmlspecialchars($textos[param('msg')] ?? 'Listo.');
     ?>
 </div>
 <?php endif; ?>

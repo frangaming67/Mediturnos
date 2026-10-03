@@ -215,3 +215,31 @@ if (!function_exists('e')) {
         return htmlspecialchars($v ?? '', ENT_QUOTES, 'UTF-8');
     }
 }
+
+/**
+ * Un parámetro de la URL, SIEMPRE como texto.
+ *
+ * ── POR QUÉ HACE FALTA ───────────────────────────────────────
+ * Cualquiera puede pedir `?msg[]=x`, y entonces `$_GET['msg']` es un
+ * ARREGLO. Varias vistas lo usan como clave de un mapa de mensajes:
+ *
+ *     $textos[$_GET['msg']] ?? 'Listo.'
+ *
+ * y un arreglo como clave de arreglo es un error fatal de PHP. La página
+ * muere con la ruta del archivo y el número de línea impresos — y encima
+ * respondiendo 200, así que una prueba que sólo mire el código de
+ * respuesta no lo detecta. Hay que mirar el cuerpo.
+ *
+ * `!empty()` NO alcanza: un arreglo con un elemento no está vacío. Lo
+ * que hay que comprobar es el TIPO.
+ *
+ * Vive acá, al lado de e(), porque es lo mismo: una función de una línea
+ * que evita que un dato de afuera llegue crudo a un lugar donde hace
+ * daño.
+ */
+if (!function_exists('param')) {
+    function param(string $clave, string $porOmision = ''): string
+    {
+        return is_string($_GET[$clave] ?? null) ? $_GET[$clave] : $porOmision;
+    }
+}

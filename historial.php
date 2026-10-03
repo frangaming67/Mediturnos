@@ -162,6 +162,13 @@ require_once __DIR__ . '/sistema/vistas/layouts/navbar.php';
     <p class="form-hint" style="margin-bottom:12px">
         <?= count($linea) ?> registro<?= count($linea) === 1 ? '' : 's' ?>
         <?= $hayFiltros ? ' con los filtros aplicados' : '' ?>, del más reciente al más antiguo.
+        <?php // El modelo corta en MAX_FILAS. Si llegó al techo hay que
+              // decirlo: si no, la persona cree que eso es todo su
+              // historial y no tiene forma de saber que falta. ?>
+        <?php if (count($linea) >= Historial::MAX_FILAS): ?>
+            Se muestran los <?= Historial::MAX_FILAS ?> más recientes; para ver
+            los anteriores, acotá las fechas.
+        <?php endif; ?>
     </p>
 
     <ol class="hist-linea">
@@ -188,6 +195,17 @@ require_once __DIR__ . '/sistema/vistas/layouts/navbar.php';
                 <p class="hist-meta">
                     <?= htmlspecialchars($h['subtitulo'] ?? '') ?>
                     · Dr/a. <?= htmlspecialchars($h['medico']) ?>
+                    <?php
+                    // La consulta se ubica en la fecha del TURNO, que es
+                    // cuando pasó. Si la ficha se escribió otro día, se
+                    // aclara: sin eso, alguien que la ve recién aparecer
+                    // en una fecha vieja no entiende de dónde salió.
+                    if (!empty($h['registrada_en'])
+                        && date('Y-m-d', strtotime($h['registrada_en'])) !== date('Y-m-d', $ts)):
+                    ?>
+                    · <span class="hist-registrada">ficha registrada el
+                        <?= htmlspecialchars(date('d/m/Y', strtotime($h['registrada_en']))) ?></span>
+                    <?php endif; ?>
                 </p>
 
                 <?php if (!empty($h['detalle'])): ?>

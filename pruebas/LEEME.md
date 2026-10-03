@@ -3,10 +3,16 @@
 Guiones de verificación que se ejecutan a mano desde la línea de comandos.
 
 ```bash
-php pruebas/receta_modelo.php     # 81 comprobaciones del modelo
-bash pruebas/receta_http.sh       # 96 comprobaciones por HTTP
-bash pruebas/humo.sh              # 24 pantallas, en los tres roles
+php  pruebas/receta_modelo.php        #  81  el modelo de recetas
+php  pruebas/historial.php            #  26  la línea de tiempo clínica
+php  pruebas/tareas.php               #  20  recordatorios y vencimientos
+bash pruebas/receta_http.sh           #  96  recetas por HTTP
+bash pruebas/notificaciones_http.sh   #  62  el centro de notificaciones
+bash pruebas/historial_http.sh        #  23  la ficha clínica por HTTP
+bash pruebas/humo.sh                  #  24  cada pantalla, en los tres roles
 ```
+
+Todas juntas, 332 comprobaciones.
 
 Cada uno imprime una línea por comprobación y termina con el total. El código
 de salida es `0` si todo pasó y `1` si algo falló, así que sirven en un `if` de
@@ -16,6 +22,10 @@ un script o, el día que lo haya, en un *pipeline*.
 |---|---|---|
 | `receta_modelo.php` | Las reglas de negocio y las garantías del motor (`CHECK`, `UNIQUE`, columnas generadas, `ON DELETE CASCADE`) | MySQL |
 | `receta_http.sh` | Lo que sólo se ve entrando al sitio: roles, CSRF, IDOR, escapado en el HTML, redirecciones | MySQL, Apache y Git Bash |
+| `historial.php` | El orden de la línea de tiempo, el escapado del buscador y el techo de filas | MySQL |
+| `tareas.php` | Que los recordatorios se emitan una sola vez y no avisen de lo que no corresponde | MySQL (y el correo en modo archivo) |
+| `notificaciones_http.sh` | El centro de avisos: filtros, IDOR entre cuentas, CSRF y redirección abierta | MySQL, Apache y Git Bash |
+| `historial_http.sh` | Los guardas de la ficha clínica y los parámetros que llegan como arreglo | MySQL, Apache y Git Bash |
 | `humo.sh` | Que ninguna pantalla devuelva un código inesperado ni imprima un aviso de PHP, en los tres roles | MySQL, Apache y Git Bash |
 
 ## Por qué están versionados acá
@@ -45,6 +55,10 @@ ejecuta). La contrapartida es que **escriben en la base**, así que:
   `receta_http.sh` eso va en un `trap EXIT`, para que ocurra incluso si el
   guión se corta por la mitad.
 - **No correrlos contra la base de producción.**
+- `tareas.php` **se niega a correr si el SMTP está configurado**: trabaja con
+  pacientes de la base de desarrollo, cuyas direcciones no existen, así que
+  mandaría correos que van a rebotar. Apagá el correo antes:
+  `mv config/mail.php config/mail.php.apagado`
 
 Pasar a pruebas unitarias de verdad pide PHPUnit, y PHPUnit pide Composer, que
 el proyecto descartó a propósito ([ADR-0001](../docs/adr/0001-sin-framework.md)).
@@ -71,6 +85,16 @@ acentos leído de la base, entonces, no se puede. Para verificar que un acento
 se guardó bien se mira `HEX(columna) LIKE '%C3AD%'`: el HEX es ASCII y cruza sin
 que nadie lo convierta. Y devuelve los valores con CR al final, que `$( )` no
 saca — por eso las lecturas pasan por `my()`.
+
+**3. Canalizar la salida a `head` mata el guión.**
+`head` cierra la tubería en cuanto tiene sus líneas, y eso termina el proceso
+con SIGPIPE **antes de que corra la limpieza**. Los datos de prueba sobreviven, y
+la corrida siguiente falla por culpa de la anterior: la peor clase de fallo,
+el que no tiene nada que ver con lo que se cambió.
+
+Ya pasó dos veces. Usá `tail`, o guardá la salida: `php pruebas/tareas.php > salida.txt`.
+`tareas.php` y `verificar_demo.sh` además barren los sobrantes al empezar, pero no
+todos pueden hacerlo.
 
 **3. Apache y MySQL de este XAMPP se caen.**
 Cuando el servidor se cae a mitad de la corrida, todas las peticiones devuelven

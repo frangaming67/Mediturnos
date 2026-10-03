@@ -7,7 +7,7 @@
 | SQL Injection | ✅ | Sentencias preparadas en el 100% de las consultas |
 | XSS reflejado | ✅ | `htmlspecialchars` en toda salida |
 | XSS almacenado | ✅ | `textContent` en JS; nunca `innerHTML` con datos de la base |
-| CSRF | ✅ | Token por sesión comparado con `hash_equals` |
+| CSRF | ✅ | Token por sesión comparado con `hash_equals`, **más POST obligatorio** en toda acción que modifica datos — ver abajo |
 | Session Fixation | ✅ | `session_regenerate_id(true)` al autenticar |
 | Session Hijacking | ⚠️ Parcial | Cookie `HttpOnly` + `SameSite`, timeout 30 min. `Secure` requiere HTTPS |
 | Fuerza bruta | ✅ | 5 intentos / 15 min por identificador + IP. También al cambiar la contraseña desde el perfil |
@@ -17,9 +17,12 @@
 | Clickjacking | ✅ | `X-Frame-Options: DENY` |
 | Credenciales expuestas | ✅ | `config/mail.php` en `.gitignore` |
 | Contraseñas | ✅ | bcrypt vía `password_hash` |
-| Campos enviados como array | ⚠️ Parcial | Cubierto en el perfil (`ControladorPerfil::texto()`). Los formularios anteriores todavía asumen texto |
+| Campos enviados como array | ⚠️ Parcial | Cubierto en el perfil, el historial, las recetas y las notificaciones; y `param()` cubre los parámetros de la URL en las vistas. Los formularios de los ABM todavía asumen texto |
 | Manipulación de precio | ✅ | La cobertura del turno se valida contra las del paciente — ver abajo |
 | Acceso a datos de salud | ✅ | Los resultados viven fuera de la carpeta pública y se entregan sólo tras verificar quién los pide |
+| Redirección abierta | ✅ | La `url_accion` de un aviso se valida antes de ir a la cabecera `Location` — ver abajo |
+| Inyección de cabeceras | ✅ | Mismo control: un salto de línea en un destino lo descarta |
+| Buscadores con comodines | ✅ | `patronLike()` escapa `%` y `_`. No era inyección, era un buscador que mentía |
 
 ## Consultas preparadas
 
@@ -175,6 +178,89 @@ catch (PDOException $e) {
 Un mensaje de PDO puede incluir fragmentos de la consulta o de la cadena de
 conexión, así que nunca se muestra al visitante.
 
+## 🚨 CSRF: el token no alcanzaba
+
+`csrf_verificar()` empieza así:
+
+```php
+if (($_SERVER['REQUEST_METHOD'] ?? 'GET') !== 'POST') {
+    return;
+}
+```
+
+Deja pasar todo lo que no sea POST, y **está bien** donde se la pensó: al
+principio de un controlador que sirve también listados, que no llevan token.
+
+Pero seis controladores la llamaban **dentro** de una acción que modifica datos,
+confiando en que ahí protegía. Si la petición llega por GET, no verifica nada y
+la acción se ejecuta igual.
+
+Y una acción que funciona por GET no necesita ningún formulario para dispararse.
+Basta que la persona, con su sesión abierta, abra una página cualquiera —un foro,
+un correo en HTML, un comentario— que contenga:
+
+```html
+<img src="https://elsitio/.../ControladorNotificacion.php?accion=eliminarLeidas">
+```
+
+El navegador pide esa "imagen" con las cookies de la sesión y la acción corre. No
+hay nada que la persona pueda notar: es una imagen que no carga.
+
+**Comprobado contra el servidor local antes del arreglo:** un GET sin token a
+`?accion=eliminarLeidas` devolvía `302` y borraba tres notificaciones.
+
+### El arreglo
+
+`csrf_post()` exige las dos cosas, y ninguna sobra:
+
+| Sólo esto | Qué sigue siendo posible |
+|---|---|
+| POST sin token | Un formulario preparado en otro sitio lo dispara |
+| Token, cualquier método | Una etiqueta `<img>` lo dispara |
+
+Las dieciocho llamadas que estaban dentro de un `case` pasaron a `csrf_post()`.
+Las siete que están al principio de un controlador se dejaron como estaban: esos
+controladores sirven listados por GET y exigir POST los rompería enteros.
+
+Las acciones que leían su id de `$_POST` ya eran inofensivas por GET —el id
+llegaba en cero y no encontraban nada que tocar— pero quedaban a merced del
+próximo cambio. Las expuestas de verdad eran las que no necesitan ningún dato de
+entrada: `leerTodas` y `eliminarLeidas`.
+
+### Lo que esto enseña
+
+El agujero no estuvo en una función mal escrita: `csrf_verificar()` hace
+exactamente lo que dice. Estuvo en **usarla para algo que no cubría**, con un
+nombre que invitaba a creer que sí. Una función de seguridad que falla en
+silencio cuando se la usa fuera de su contexto es una función que va a fallar.
+
+Por eso `csrf_post()` responde `405 Method Not Allowed` y no un `403`: deja claro
+que el problema es el método, no el permiso, y el próximo que la use mal se
+entera al primer intento.
+
+---
+
+## 🚨 Redirección abierta: el agujero que no llegó a existir
+
+Cada notificación guarda su `url_accion`, y al abrirla el controlador redirige
+ahí. Ese valor lo escribe el propio sistema, así que hoy no puede traer nada
+raro.
+
+Se valida igual, porque termina en una cabecera `Location:`:
+
+- un aviso con `//otrositio.com` llevaría a otro dominio **desde una dirección
+  nuestra**, que es la base de un engaño de phishing: el enlace que la persona
+  recibe y revisa es del sitio en el que confía;
+- un salto de línea dentro del valor permite agregar cabeceras a la respuesta.
+
+`destinoSeguro()` rechaza cualquier esquema (`http:`, `javascript:`, `data:`), los
+`//host` y `\\host`, y los saltos de línea. Ante la duda, el panel.
+
+Son cinco líneas que no arreglan ningún problema de hoy: cubren al código que
+todavía no se escribió. Hay seis comprobaciones que lo verifican, una por cada
+forma de intentarlo.
+
+---
 ## Pendientes conocidos
 
 | Tema | Situación |
