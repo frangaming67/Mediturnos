@@ -15,8 +15,20 @@
 // insegura.
 // -----------------------------------------------------------------
 
+require_once __DIR__ . '/../../includes/busqueda.php';
+
 class Historial
 {
+    /**
+     * Techo de filas de la línea de tiempo.
+     *
+     * El historial de una persona es corto por naturaleza, pero "corto
+     * por naturaleza" no es una garantía: una cuenta con años de
+     * tratamiento crónico devolvería todo en cada visita. Es el mismo
+     * criterio y el mismo número que en Receta.
+     */
+    public const MAX_FILAS = 200;
+
     private PDO $pdo;
 
     public function __construct(PDO $pdo)
@@ -207,7 +219,18 @@ class Historial
         $consultas = "
             SELECT 'consulta'          AS clase,
                    c.id_consulta       AS id,
-                   c.creada_en         AS fecha,
+                   -- ── LA FECHA ES LA DEL TURNO, NO LA DE ESCRITURA ──
+                   -- Antes era `c.creada_en`, y eso ordenaba el historial
+                   -- por cuándo el médico se sentó a escribir la ficha. Una
+                   -- consulta de hace tres semanas registrada hoy aparecía
+                   -- hoy, arriba de todo, descolgada de su turno.
+                   --
+                   -- El historial clínico es la línea de tiempo de la
+                   -- ATENCIÓN: lo que importa es cuándo pasó la consulta.
+                   -- Cuándo se escribió sigue disponible aparte, para la
+                   -- vista, pero no ordena nada.
+                   TIMESTAMP(t.fecha, t.hora_inicio) AS fecha,
+                   c.creada_en         AS registrada_en,
                    c.motivo_consulta   AS titulo,
                    e.nombre            AS subtitulo,
                    c.diagnostico       AS detalle,
@@ -227,6 +250,8 @@ class Historial
             SELECT 'estudio'           AS clase,
                    es.id_estudio       AS id,
                    es.solicitado_en    AS fecha,
+                   -- El UNION exige las mismas columnas en las dos ramas.
+                   NULL                AS registrada_en,
                    es.nombre           AS titulo,
                    es.tipo             AS subtitulo,
                    NULL                AS detalle,
@@ -251,7 +276,11 @@ class Historial
         }
         if (!empty($filtros['q'])) {
             $where[] = '(titulo LIKE :q1 OR subtitulo LIKE :q2 OR medico LIKE :q3 OR detalle LIKE :q4)';
-            $like = '%' . $filtros['q'] . '%';
+            // patronLike() escapa los comodines. Sin eso, buscar «100%»
+            // devolvía todo lo que empiece con 100 y buscar «_»
+            // devolvía absolutamente todo: no es un agujero —el valor
+            // va como parámetro— pero es un buscador que miente.
+            $like = patronLike((string) $filtros['q']);
             // Cuatro marcadores distintos con el mismo valor: con
             // EMULATE_PREPARES en false no se puede repetir uno.
             $params[':q1'] = $like; $params[':q2'] = $like;
@@ -266,9 +295,20 @@ class Historial
             $params[':hasta']  = $filtros['hasta'];
         }
 
+        // ── POR QUÉ HAY UN TECHO ─────────────────────────────────
+        // El historial de una persona con años de atención crónica son
+        // cientos de filas, y sin límite se traían TODAS en cada visita
+        // para dibujarlas todas en una sola página. Se corta acá y la
+        // pantalla avisa que hay más.
+        //
+        // Interpolado y no como parámetro: con EMULATE_PREPARES en false
+        // MySQL recibiría el LIMIT como string y rechazaría la consulta.
+        // Es seguro porque es una constante de la clase, no entra nada de
+        // afuera.
         $sql = "SELECT * FROM ( {$consultas} UNION ALL {$estudios} ) AS h
                 WHERE " . implode(' AND ', $where) . "
-                ORDER BY fecha DESC";
+                ORDER BY fecha DESC
+                LIMIT " . (int) self::MAX_FILAS;
 
         $stmt = $this->pdo->prepare($sql);
         $stmt->execute($params);

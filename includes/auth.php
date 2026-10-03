@@ -11,6 +11,16 @@
 // de función, sin tener que instanciar nada en cada archivo.
 // -----------------------------------------------------------------
 
+// seguridad.php trae iniciarSesionSegura(), e() y param(). Se carga
+// desde acá —y no en cada controlador— porque auth.php lo requieren LOS
+// DOCE, así que es el único lugar donde alcanza escribirlo una vez.
+//
+// Hizo falta cuando las vistas empezaron a usar param() para no morirse
+// con un `?msg[]=x`: las vistas que renderiza un controlador no cargaban
+// seguridad.php, y la función no existía justo donde se la necesitaba.
+// No hay dependencia circular: seguridad.php no sabe de auth.php.
+require_once __DIR__ . '/seguridad.php';
+
 /**
  * Verifica que haya sesión activa.
  * Si no hay sesión o expiró, redirige a login.php.

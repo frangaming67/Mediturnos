@@ -49,10 +49,12 @@ $conFiltros = function (array $cambios) {
 <div class="alerta alerta-error" role="alert"><?= htmlspecialchars($mensaje) ?></div>
 <?php endif; ?>
 
-<?php if (!empty($_GET['msg'])): ?>
+<?php if (param('msg') !== ''): ?>
 <div class="alerta alerta-exito" role="alert">
     <?php
-    $n = (int) ($_GET['n'] ?? 0);
+    // (int) sobre un arreglo da 1 sin avisar, así que el número
+    // también pasa por param().
+    $n = (int) param('n', '0');
     $textos = [
         'leidas'   => $n === 1 ? 'Marcamos 1 aviso como leído.'
                                : 'Marcamos ' . $n . ' avisos como leídos.',
@@ -60,7 +62,7 @@ $conFiltros = function (array $cambios) {
         'limpiada' => $n === 1 ? 'Eliminamos 1 aviso leído.'
                                : 'Eliminamos ' . $n . ' avisos leídos.',
     ];
-    echo htmlspecialchars($textos[$_GET['msg']] ?? 'Listo.');
+    echo htmlspecialchars($textos[param('msg')] ?? 'Listo.');
     ?>
 </div>
 <?php endif; ?>

@@ -45,7 +45,10 @@ switch ($accion) {
         // paciente: la ficha es su espacio de trabajo, y para el
         // historial completo está la pantalla del historial.
         $recetas    = (new Receta($pdo))->deDelMedicoYPaciente($miMat, (int) $turno['id_paciente']);
-        $mensaje    = !empty($_GET['err']) ? urldecode($_GET['err']) : null;
+        // is_string y no !empty: con `?err[]=x` la página moría con un
+        // TypeError de urldecode() —y encima devolviendo un 200, con el
+        // error impreso arriba del contenido—. Está comprobado.
+        $mensaje    = is_string($_GET['err'] ?? null) ? urldecode($_GET['err']) : null;
         require __DIR__ . '/../vistas/historial/consulta.php';
         break;
 
@@ -118,6 +121,16 @@ switch ($accion) {
         $turno  = turnoDelMedico($modeloTurno, (int) ($_POST['id_turno'] ?? 0));
         $volver = $URL . '?accion=consulta&id=' . (int) $turno['id_turno'];
 
+        // El mismo requisito que la ficha clínica, que faltaba acá: pedir
+        // un estudio es parte de la atención, y no se atiende un turno que
+        // todavía no pasó o que se canceló. La vista ya no ofrecía el
+        // formulario, pero un POST armado a mano entraba igual.
+        if ($turno['estado'] !== 'Realizado') {
+            header('Location: ' . $volver . '&err='
+                . urlencode('Sólo se pueden pedir estudios de una consulta ya realizada.'));
+            exit;
+        }
+
         $tipo   = is_string($_POST['tipo']   ?? null) ? trim($_POST['tipo'])   : '';
         $nombre = is_string($_POST['nombre'] ?? null) ? trim($_POST['nombre']) : '';
 
@@ -164,6 +177,14 @@ switch ($accion) {
 
         $turno  = turnoDelMedico($modeloTurno, (int) ($_POST['id_turno'] ?? 0));
         $volver = $URL . '?accion=consulta&id=' . (int) $turno['id_turno'];
+
+        // Igual que al pedirlo: cargar un resultado es parte de la
+        // atención de un turno que YA ocurrió.
+        if ($turno['estado'] !== 'Realizado') {
+            header('Location: ' . $volver . '&err='
+                . urlencode('Sólo se puede cargar el resultado desde una consulta ya realizada.'));
+            exit;
+        }
 
         $estudio = $modelo->estudioConDueno((int) ($_POST['id_estudio'] ?? 0));
         // El estudio tiene que ser del MISMO paciente del turno: si no,

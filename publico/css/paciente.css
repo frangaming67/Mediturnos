@@ -562,6 +562,9 @@
     padding: 3px 9px; border-radius: 99px;
 }
 .hist-meta { font-size: .82rem; color: var(--gris); margin-top: 3px; }
+/* Cuándo se escribió la ficha, cuando no coincide con el día de la
+   consulta. Va más apagado: es un dato de contexto, no el principal. */
+.hist-registrada { font-style: italic; opacity: .85; }
 
 .hist-bloque { margin-top: 12px; }
 .hist-rotulo {
